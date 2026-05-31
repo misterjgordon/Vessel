@@ -1,0 +1,80 @@
+[project]
+name = 'vessel-valuation'
+version = '0.1.0'
+description = 'Welles vessel DCF valuation (interview case study)'
+requires-python = '>=3.11'
+dependencies = [
+    'scipy>=1.11.0',
+    'dash>=2.18.0',
+    'plotly>=5.22.0',
+    'sqlalchemy>=2.0.0',
+    'alembic>=1.13.0',
+    'python-dotenv>=1.0.0',
+    'psycopg2-binary>=2.9.0',
+    'pandas>=2.0.0',
+    'openpyxl>=3.1.0',
+]
+
+[project.optional-dependencies]
+dev = [
+    'pytest>=8.0.0',
+    'ruff>=0.8.0',
+    'pyright>=1.1.0',
+]
+
+[build-system]
+requires = ['setuptools>=68']
+build-backend = 'setuptools.build_meta'
+
+[tool.setuptools.packages.find]
+where = ['src']
+
+[tool.pytest.ini_options]
+pythonpath = ['src']
+testpaths = ['tests']
+addopts = '-rs --tb=short'
+
+[tool.ruff]
+line-length = 100
+target-version = 'py311'
+
+[tool.ruff.format]
+quote-style = 'single'
+
+[tool.ruff.lint]
+select = ['E', 'F', 'W', 'I', 'UP', 'Q', 'D']
+ignore = ['D100', 'D101', 'D102', 'D103', 'D104', 'D105']
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = 'single'
+docstring-quotes = 'double'
+
+[tool.ruff.lint.isort]
+known-first-party = ['vessel_valuation']
+
+[tool.ruff.lint.pydocstyle]
+convention = 'numpy'
+
+[tool.pyright]
+pythonVersion = '3.11'
+typeCheckingMode = 'standard'
+venvPath = '.'
+venv = '.venv'
+reportWildcardImportFromLibrary = 'none'
+reportTypedDictNotRequiredAccess = 'none'
+reportUnboundVariable = 'information'
+reportMissingImports = 'information'
+reportGeneralTypeIssues = 'information'
+reportOptionalIterable = 'none'
+reportOptionalMemberAccess = 'none'
+reportOptionalSubscript = 'none'
+reportPrivateImportUsage = 'none'
+reportUnusedExpression = 'none'
+reportInvalidStringEscapeSequence = 'none'
+
+[[tool.pyright.executionEnvironments]]
+root = 'src'
+
+[[tool.pyright.executionEnvironments]]
+root = 'tests'
+extraPaths = ['src']

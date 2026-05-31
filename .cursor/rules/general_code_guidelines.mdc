@@ -1,0 +1,131 @@
+---
+alwaysApply: true
+---
+# General Code Guidelines
+
+## Domain shapes vs SQLAlchemy models
+
+Business-domain types and persistence are separate layers under `src/vessel_valuation/`.
+
+- Domain shapes (`@dataclass`, enums, computed result types) belong in `schema.py` (e.g.
+  `VesselInputs`, `ValuationResult`). Define each shape once; import elsewhere. Do not redefine
+  the same domain shapes in `model.py`, `validation.py`, `file_parser.py`, Dash callbacks, or tests.
+- SQLAlchemy ORM table definitions live only in `db/models.py`. Never put dataclasses, validation
+  logic, or DCF formulas in model modules.
+- All database reads and writes go through `db/repository.py` — no raw SQL or ORM queries in
+  callbacks, views, or the valuation engine.
+- Schema changes require an Alembic revision in `db/migrations/`. Edit ORM models first, autogenerate
+  or hand-write the migration, then apply with `alembic upgrade head`. Do not alter production tables
+  without a versioned migration.
+- Normalize at boundaries: `file_parser.py` and form input produce raw dicts → `validation.py` coerces
+  to `VesselInputs` → `model.py` computes → `repository.py` maps domain objects ↔ ORM rows.
+- Dash UI (`app/`) is wiring only: layout, callbacks, and rendering. Callbacks call
+  `validation`, `model`, `insights`, and `repository` — zero business logic, zero SQL, zero formulas
+  in callback modules.
+
+## Understand Before Modifying
+
+- Don't change code you don't understand.
+- Trace data flow: where does it come from, where does it go?
+- Check callers and callees before changing function contracts.
+- When something breaks, understand WHY before fixing. What structural issue _allowed_ the failure to be possible.
+
+## Consistency
+
+Apply at all levels: variable naming → code style → function signatures → component patterns → architecture.
+
+- Before writing, check how similar code is written. Match it or note to user why yours is better.
+- When modifying related places, update all identically.
+- Proactively look for inconsistencies at any level - from naming to architectural patterns. These are often complex and systemic, not just simple fixes. Note them to user with assessment of scope and effort.
+- Watch for naming mismatches across stack . Fix if trivial, otherwise note to user.
+
+## Reuse vs New
+
+1. Check if it already exists - function, pattern, endpoint, component, approach.
+2. If found, tell user and propose using/extending it before creating anything new.
+3. If not, create it in the file where it's used.
+4. Move to shared location only with 2+ usages and clear abstraction.
+
+Avoid creating multiple pathways for same operation.
+
+## Single Responsibility
+
+- One file = one responsibility.
+- One function = one task.
+- One class/component = one concept.
+
+## Naming
+
+- Names describe purpose, not implementation.
+- Avoid generic names (`data`, `result`, `temp`, `utils`, `out`).
+- Do not embed variable or constant values in function names (e.g. `seed_hims_row` when HIMS is a
+  symbol constant; use `seed_sample_execution` instead).
+
+## Hard coded values
+
+- Hard-coded values should be defined with a named variable if they are used in multiple places.
+- Inside a function, prefer the named constant over repeating its literal (e.g. use `FILLED_PRICE` or
+  `Decimal(str(FILLED_PRICE))` instead of `Decimal('33.18')` when `FILLED_PRICE = 33.18` exists).
+  
+## Comments
+
+- Prefer docstrings/comments almost everywhere, but match complexity to code. Trivial code = trivial comment.
+- Explain *why*, not *what* - code shows what, comments explain intent.
+- Be concise but maximally clear. Information dense, no filler.
+- For complex data structures, include examples.
+- No conversational filler ("now we do X", "this is where we...").
+- Do not reference the user's conversation in comments
+- Do not reference changes from old code (don't say "now we do it this way instead of the old way..." etc)
+- Do not remove or change existing comments unless necessary for a change in behavior.
+- No banner/divider comments (`// ========`, `# --------`)
+
+## Verbosity Awareness
+
+- More code = more tokens = slower and more expensive.
+- Prefer concise patterns achieving same result.
+- Avoid unnecessary wrappers, conversions, or intermediaries.
+
+## Edge Cases
+
+- Consider: null, empty, zero, negative, boundary values.
+- What happens when this fails? Is the error clear?
+- If handling happy path, consider what sad paths are.
+
+## Types Reflect Intent
+
+Types should tightly match business reality. Proactively narrow them:
+
+- Value always present? Make type required, not optional "just in case".
+- Adding null or None checks? Ask if null or None is valid. If not, fix type upstream.
+- Validate at boundaries, trust data downstream.
+- Prefer `'active' | 'inactive'` over `string`.
+
+Don't contradict types with defensive code:
+- No `.get()`, `?.`, `??` , '.getattr()' for required fields.
+- No null guards for non-nullable types.
+- No defaults masking missing data.
+
+Loose types? Fix them. Defensive code hiding bad types is dishonest.
+
+## Continuous Re-evaluation
+
+- Code valid yesterday may need refactoring today.
+- When touching old code, assess if it fits current patterns.
+- Don't preserve bad patterns just because they exist.
+
+## Default Behavior
+
+When multiple approaches are valid:
+- Choose simplest correct solution.
+- Prefer clarity over cleverness.
+- Prefer explicit over implicit.
+
+## Violations
+
+If a change violates these principles, don't implement it. Explain conflict and propose alternative.
+
+
+## Naming: do not encode values in identifiers
+- NEVER name variables/constants/functions after their current literal values.
+  - Bad: `VESSEL_ATHENA = 'Athena'`, `TEU_8500 = 8500`, `def vessel_athena(): ...`
+  - Good: `VESSEL_NAME = 'Athena'`, `TEU_SIZE = 8500`, `def load_vessel(name: str): ...`
