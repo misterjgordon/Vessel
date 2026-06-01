@@ -20,7 +20,7 @@ Business-domain types and persistence are separate layers under `src/vessel_valu
 - Normalize at boundaries: `file_parser.py` and form input produce raw dicts → `validation.py` coerces
   to `VesselInputs` → `model.py` computes → `repository.py` maps domain objects ↔ ORM rows.
 - Dash UI (`app/`) is wiring only: layout, callbacks, and rendering. Callbacks call
-  `validation`, `model`, `insights`, and `repository` — zero business logic, zero SQL, zero formulas
+  `validation`, `model`, `decision_insights`, and `repository` — zero business logic, zero SQL, zero formulas
   in callback modules.
 
 ## Understand Before Modifying
@@ -119,6 +119,11 @@ When multiple approaches are valid:
 - Choose simplest correct solution.
 - Prefer clarity over cleverness.
 - Prefer explicit over implicit.
+
+## Tests
+
+- Every `test_*` function must have a one-line docstring describing the behaviour under test.
+- The docstring states the expected outcome, not just what the test does (e.g. "Positive-NPV vessel breakeven lies below current revenue per day", not "Test breakeven revenue").
 
 ## Violations
 

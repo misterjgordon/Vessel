@@ -1,9 +1,11 @@
+# Run: uv run --extra dev pytest tests/unit/test_validation.py -v
 """Validation layer tests — Tier 1 errors and Tier 2 warnings."""
 
 from datetime import date, datetime
 
 import pytest
 
+from vessel_valuation.schema import ValidationThresholds
 from vessel_valuation.validation import (
     TIER1_RULES,
     TIER2_RULES,
@@ -61,12 +63,11 @@ def test_sentinel_in_purchase_price_raises_error(sentinel: str) -> None:
     assert result.inputs is None
 
 
-def test_sentinel_in_residual_does_not_block_if_lw_tonnage_valid() -> None:
-    """Invalid residual sentinel falls back to lw_tonnage-derived value when tonnage is valid."""
+def test_sentinel_in_residual_value_raises_error() -> None:
+    """Invalid residual sentinel fails Tier 1 validation."""
     result = validate(_raw(residual_value='#VALUE!'))
-    assert result.errors == []
-    assert result.inputs is not None
-    assert result.inputs.residual_value == pytest.approx(12_500.0 * 400.0)
+    assert result.errors
+    assert result.inputs is None
 
 
 def test_missing_vessel_name_raises_error() -> None:
@@ -148,17 +149,16 @@ def test_purchase_date_as_excel_datetime_accepted() -> None:
     assert result.inputs.purchase_date == date(2025, 12, 31)
 
 
-def test_residual_derived_from_lw_tonnage_when_absent() -> None:
-    """Missing residual_value is derived from lw_tonnage at $400 per tonne."""
+def test_missing_residual_value_raises_error() -> None:
+    """Missing residual_value fails Tier 1 validation."""
     raw = {k: v for k, v in BASE_RAW.items() if k != 'residual_value'}
     result = validate(raw)
-    assert result.errors == []
-    assert result.inputs is not None
-    assert result.inputs.residual_value == pytest.approx(12_500.0 * 400.0)
+    assert result.errors
+    assert result.inputs is None
 
 
-def test_provided_residual_takes_precedence_over_derived() -> None:
-    """Explicit residual_value overrides the lw_tonnage-derived default."""
+def test_residual_value_coerced_when_provided() -> None:
+    """Explicit residual_value is coerced to float on the VesselInputs instance."""
     result = validate(_raw(residual_value=4_000_000.0))
     assert result.inputs is not None
     assert result.inputs.residual_value == pytest.approx(4_000_000.0)
@@ -179,11 +179,11 @@ def test_revenue_below_opex_triggers_warning() -> None:
     assert any('opex' in w.lower() or 'revenue' in w.lower() for w in result.warnings)
 
 
-def test_purchase_price_outside_teu_benchmark_triggers_warning() -> None:
-    """Purchase price far from the TEU-size benchmark triggers a Tier 2 warning."""
+def test_pp_teu_factor_outside_benchmark_triggers_warning() -> None:
+    """PP/TEU factor far from the 10,000 TEU seed triggers a Tier 2 warning."""
     result = validate(_raw(purchase_price=9_000_000.0))
     assert result.errors == []
-    assert any('teu' in w.lower() or 'purchase price' in w.lower() for w in result.warnings)
+    assert any('Purchase-price÷TEU ratio' in w for w in result.warnings)
 
 
 def test_revenue_outside_teu_benchmark_triggers_warning() -> None:
@@ -209,3 +209,13 @@ def test_all_tier2_rules_have_unique_codes() -> None:
     """Every Tier 2 validation rule has a distinct warning code."""
     codes = [r.code for r in TIER2_RULES]
     assert len(codes) == len(set(codes))
+
+
+def test_wider_revenue_band_suppresses_teu_revenue_warning() -> None:
+    """A larger revenue_band threshold suppresses the TEU revenue warning."""
+    strict = validate(_raw(revenue_per_day=44_000.0))
+    assert any('outside the expected range' in w for w in strict.warnings)
+
+    loose = ValidationThresholds(revenue_band=50_000.0)
+    relaxed = validate(_raw(revenue_per_day=44_000.0), thresholds=loose)
+    assert not any('outside the expected range' in w for w in relaxed.warnings)

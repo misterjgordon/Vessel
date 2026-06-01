@@ -62,6 +62,8 @@ Key assumptions underpinning the DCF model. These follow standard corporate fina
 ## Purchase Price Validation
 
 - TEU size is a required input. It is the primary dimension for comparing vessel values across the fleet.
+- For Tier 2 checks, TEU is rounded to the **nearest 1,000** (e.g. 7,460 → 7,000) before lookup in purchase-price and revenue benchmarks.
+- **Save to database** rejects duplicates: the same `vessel_name`, `purchase_date`, and `teu_size` cannot be saved twice (case-insensitive name). Load the existing entry or change identity fields.
 - A vessel's purchase price is cross-checked against the **median** purchase price of other vessels in the same TEU class. Median is used rather than mean because it is robust to outliers in small samples.
 - A value outside ±10% of the TEU-class median triggers a Tier 2 warning.
 - On first upload, the median is computed from valid rows within the same batch (Tier 1 error rows are excluded before the median is calculated).

@@ -10,11 +10,14 @@ is None. Tier 2 runs only on a successfully coerced VesselInputs and
 produces advisory warnings the user may override.
 """
 
+import statistics
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date, datetime
-
-from vessel_valuation.schema import SCRAP_RATE_PER_TONNE, VesselInputs
+from vessel_valuation.case_study_benchmarks import load_case_study_pp_teu_benchmarks
+from vessel_valuation.schema import DEFAULT_VALIDATION_THRESHOLDS
+from vessel_valuation.schema import ValidationThresholds
+from vessel_valuation.schema import VesselInputs
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -24,23 +27,18 @@ SENTINELS: frozenset[str] = frozenset(
     {'#value!', '#n/a', '#ref!', '#div/0!', '#null!', 'n/a', '-', ''}
 )
 
-REVENUE_BAND: float = 5_000.0
-PRICE_TOLERANCE: float = 0.10
+# Purchase-price÷TEU ratio defaults — medians from case-study sample sheet (see data/*.json).
+_CASE_STUDY_PP_TEU_BENCHMARKS: dict[int, float] = load_case_study_pp_teu_benchmarks()
 
-# Hardcoded seed benchmarks — derived from the 9 valid sample vessels.
-# Replaced by live DB medians (via teu_medians parameter) after Phase 6.
-_TEU_PRICE_SEEDS: dict[int, float] = {
-    7000: 80_000_000.0,
-    8000: 90_000_000.0,
-    10000: 100_000_000.0,
-    12000: 115_000_000.0,
-}
 _TEU_REVENUE_SEEDS: dict[int, float] = {
     7000: 40_000.0,
     8000: 45_000.0,
     10000: 50_000.0,
     12000: 54_000.0,
 }
+
+# Tier 2 purchase-price and revenue benchmarks key on TEU rounded to this step.
+TEU_BUCKET_ROUNDING = 1000
 
 
 # ---------------------------------------------------------------------------
@@ -132,10 +130,6 @@ def _coerce_inputs(raw: dict[str, object]) -> VesselInputs:
         assert v is not None, f'{key} should be valid after Tier 1'
         return v
 
-    lw = req_float('lw_tonnage')
-    rv = _to_float(raw, 'residual_value')
-    residual = rv if rv is not None else lw * SCRAP_RATE_PER_TONNE
-
     pd = _to_date(raw, 'purchase_date')
     assert pd is not None, 'purchase_date should be valid after Tier 1'
 
@@ -143,8 +137,8 @@ def _coerce_inputs(raw: dict[str, object]) -> VesselInputs:
         vessel_name=str(raw.get('vessel_name', '')).strip(),
         purchase_price=req_float('purchase_price'),
         vessel_life=req_int('vessel_life'),
-        residual_value=residual,
-        lw_tonnage=lw,
+        residual_value=req_float('residual_value'),
+        lw_tonnage=req_float('lw_tonnage'),
         revenue_per_day=req_float('revenue_per_day'),
         offhire_rate=req_float('offhire_rate'),
         opex_per_day=req_float('opex_per_day'),
@@ -217,6 +211,7 @@ TIER1_RULES: list[RawRule] = [
         lambda r: (_to_int(r, 'vessel_life') or 0) >= 1,
     ),
     _positive_float_rule('V-004', 'lw_tonnage', 'Light weight tonnage (LWT)'),
+    _positive_float_rule('V-016', 'residual_value', 'Residual value'),
     _positive_float_rule('V-005', 'revenue_per_day', 'Revenue per day'),
     _rate_rule('V-006', 'offhire_rate', 'Off-hire rate'),
     _positive_float_rule('V-007', 'opex_per_day', 'OpEx per day'),
@@ -243,15 +238,6 @@ TIER1_RULES: list[RawRule] = [
         'V-015',
         'Purchase date is required (YYYY-MM-DD or Excel date)',
         lambda r: _to_date(r, 'purchase_date') is not None,
-    ),
-    RawRule(
-        'V-016',
-        'Residual value, when provided, must be a non-negative number',
-        lambda r: (
-            r.get('residual_value') is None
-            or _is_sentinel(r.get('residual_value'))
-            or (_to_float(r, 'residual_value') or -1) >= 0
-        ),
     ),
 ]
 
@@ -282,45 +268,88 @@ TIER2_RULES: list[InputRule] = [
 # ---------------------------------------------------------------------------
 
 
-def _nearest_teu_bucket(teu: int) -> int:
-    """Round TEU to the nearest 500 for benchmark lookup."""
-    return round(teu / 500) * 500
+def nearest_teu_bucket(teu: int) -> int:
+    """Round TEU to the nearest ``TEU_BUCKET_ROUNDING`` step for benchmark lookup."""
+    return round(teu / TEU_BUCKET_ROUNDING) * TEU_BUCKET_ROUNDING
 
 
-def _expected_price(teu: int, medians: dict[int, float]) -> float | None:
-    """Return median purchase price for the TEU bucket, or None if unknown."""
-    return medians.get(_nearest_teu_bucket(teu))
+def vessel_inputs_identity(inputs: VesselInputs) -> tuple[str, date, int]:
+    """Return normalized identity for duplicate detection and peer matching."""
+    return (inputs.vessel_name.strip().casefold(), inputs.purchase_date, inputs.teu_size)
+
+
+def pp_teu_factor(purchase_price: float, teu_size: int) -> float:
+    """Purchase-price÷TEU ratio: how many times purchase price exceeds TEU count."""
+    return purchase_price / teu_size
+
+
+def format_pp_teu_ratio(value: float) -> str:
+    """Format a purchase-price÷TEU ratio for display (unitless multiple, not currency)."""
+    return f'{value:,.0f}×'
+
+
+def median_pp_teu_factor(inputs_list: list[VesselInputs]) -> dict[int, float]:
+    """Median purchase-price÷TEU ratio by exact TEU when at least two vessels share that size."""
+    by_teu: dict[int, list[float]] = {}
+    for inp in inputs_list:
+        by_teu.setdefault(inp.teu_size, []).append(pp_teu_factor(inp.purchase_price, inp.teu_size))
+    return {teu: statistics.median(factors) for teu, factors in by_teu.items() if len(factors) >= 2}
+
+
+def _resolved_pp_teu_factor_benchmarks(
+    overrides: dict[int, float] | None,
+) -> dict[int, float]:
+    """Case-study PP÷TEU ratios merged with DB fleet overrides (exact TEU keys only)."""
+    merged = dict(_CASE_STUDY_PP_TEU_BENCHMARKS)
+    if overrides:
+        merged.update(overrides)
+    return merged
+
+
+def _expected_pp_teu_factor(teu: int, benchmarks: dict[int, float]) -> float | None:
+    """Return benchmark purchase-price÷TEU ratio for ``teu`` (exact, then rounded bucket)."""
+    if teu in benchmarks:
+        return benchmarks[teu]
+    bucket = nearest_teu_bucket(teu)
+    return benchmarks.get(bucket)
 
 
 def _expected_revenue(teu: int) -> float | None:
-    return _TEU_REVENUE_SEEDS.get(_nearest_teu_bucket(teu))
+    return _TEU_REVENUE_SEEDS.get(nearest_teu_bucket(teu))
 
 
-def _teu_price_warning(
+def _pp_teu_factor_warning(
     inputs: VesselInputs,
-    teu_medians: dict[int, float],
+    pp_teu_factor_benchmarks: dict[int, float],
+    thresholds: ValidationThresholds,
 ) -> str | None:
-    """Return a warning string if purchase price is outside TEU benchmark ±10%."""
-    expected = _expected_price(inputs.teu_size, teu_medians)
+    """Warn when purchase-price÷TEU ratio is outside ±tolerance of the TEU-class benchmark."""
+    expected = _expected_pp_teu_factor(inputs.teu_size, pp_teu_factor_benchmarks)
     if expected is None:
         return None
-    lo, hi = expected * (1 - PRICE_TOLERANCE), expected * (1 + PRICE_TOLERANCE)
-    if not lo <= inputs.purchase_price <= hi:
-        return (
-            f'Purchase price ${inputs.purchase_price:,.0f} is outside the expected '
-            f'±{PRICE_TOLERANCE:.0%} range for {inputs.teu_size} TEU vessels '
-            f'(${lo:,.0f} – ${hi:,.0f})'
-        )
-    return None
+    actual = pp_teu_factor(inputs.purchase_price, inputs.teu_size)
+    tol = thresholds.price_tolerance
+    lo, hi = expected * (1 - tol), expected * (1 + tol)
+    if lo <= actual <= hi:
+        return None
+    return (
+        f'Purchase-price÷TEU ratio {format_pp_teu_ratio(actual)} is outside the expected '
+        f'±{tol:.0%} range for {inputs.teu_size:,} TEU vessels '
+        f'({format_pp_teu_ratio(lo)} – {format_pp_teu_ratio(hi)})'
+    )
 
 
-def _teu_revenue_warning(inputs: VesselInputs) -> str | None:
-    """Return a warning string if revenue/day is outside the TEU benchmark ±$5k."""
+def _teu_revenue_warning(
+    inputs: VesselInputs,
+    thresholds: ValidationThresholds,
+) -> str | None:
+    """Return a warning string if revenue/day is outside the TEU benchmark band."""
     expected = _expected_revenue(inputs.teu_size)
     if expected is None:
         return None
-    if abs(inputs.revenue_per_day - expected) > REVENUE_BAND:
-        lo, hi = expected - REVENUE_BAND, expected + REVENUE_BAND
+    band = thresholds.revenue_band
+    if abs(inputs.revenue_per_day - expected) > band:
+        lo, hi = expected - band, expected + band
         return (
             f'Revenue per day ${inputs.revenue_per_day:,.0f} is outside the expected '
             f'range for {inputs.teu_size} TEU vessels (${lo:,.0f} – ${hi:,.0f})'
@@ -333,9 +362,40 @@ def _teu_revenue_warning(inputs: VesselInputs) -> str | None:
 # ---------------------------------------------------------------------------
 
 
+def tier2_warnings(
+    inputs: VesselInputs,
+    pp_teu_factor_benchmarks: dict[int, float] | None = None,
+    thresholds: ValidationThresholds | None = None,
+) -> list[str]:
+    """Run Tier 2 rules on a validated VesselInputs; return a list of warnings.
+
+    Parameters
+    ----------
+    inputs
+        Validated vessel inputs — must have passed Tier 1.
+    pp_teu_factor_benchmarks
+        Exact TEU → median PP÷TEU from saved fleet (2+ peers). Merged over
+        case-study defaults when the database has insufficient peers.
+    thresholds
+        TEU benchmark warning bands. Uses ``DEFAULT_VALIDATION_THRESHOLDS``
+        when None.
+    """
+    active_thresholds = thresholds if thresholds is not None else DEFAULT_VALIDATION_THRESHOLDS
+    benchmarks = _resolved_pp_teu_factor_benchmarks(pp_teu_factor_benchmarks)
+    warnings = [rule.message for rule in TIER2_RULES if not rule.check(inputs)]
+    factor_warn = _pp_teu_factor_warning(inputs, benchmarks, active_thresholds)
+    if factor_warn:
+        warnings.append(factor_warn)
+    revenue_warn = _teu_revenue_warning(inputs, active_thresholds)
+    if revenue_warn:
+        warnings.append(revenue_warn)
+    return warnings
+
+
 def validate(
     raw: dict[str, object],
-    teu_medians: dict[int, float] | None = None,
+    pp_teu_factor_benchmarks: dict[int, float] | None = None,
+    thresholds: ValidationThresholds | None = None,
 ) -> ValidationResult:
     """Run Tier 1 then Tier 2 validation against one raw vessel record.
 
@@ -344,9 +404,12 @@ def validate(
     raw
         Dict with keys matching VesselInputs field names. Produced by
         the manual form or file_parser before any coercion.
-    teu_medians
-        TEU-bucket → median purchase price from the DB (vessel.benchmarks).
-        When None, falls back to hardcoded seed benchmarks from sample data.
+    pp_teu_factor_benchmarks
+        Exact TEU → median PP÷TEU from saved fleet (2+ peers). Case-study
+        defaults apply when the database has no peer median for that TEU.
+    thresholds
+        TEU benchmark warning bands. Uses ``DEFAULT_VALIDATION_THRESHOLDS``
+        when None.
 
     Returns
     -------
@@ -355,6 +418,7 @@ def validate(
         warnings: Tier 2 advisories (inputs is populated regardless).
         inputs: Typed VesselInputs if Tier 1 passed, else None.
     """
+    active_thresholds = thresholds if thresholds is not None else DEFAULT_VALIDATION_THRESHOLDS
     errors: list[str] = [rule.message for rule in TIER1_RULES if not rule.check(raw)]
 
     if errors:
@@ -362,15 +426,15 @@ def validate(
         return ValidationResult(errors=errors, warnings=empty_warnings, inputs=None)
 
     inputs = _coerce_inputs(raw)
-    medians = teu_medians if teu_medians is not None else _TEU_PRICE_SEEDS
+    benchmarks = _resolved_pp_teu_factor_benchmarks(pp_teu_factor_benchmarks)
 
     warnings: list[str] = [rule.message for rule in TIER2_RULES if not rule.check(inputs)]
 
-    price_warn = _teu_price_warning(inputs, medians)
-    if price_warn:
-        warnings.append(price_warn)
+    factor_warn = _pp_teu_factor_warning(inputs, benchmarks, active_thresholds)
+    if factor_warn:
+        warnings.append(factor_warn)
 
-    revenue_warn = _teu_revenue_warning(inputs)
+    revenue_warn = _teu_revenue_warning(inputs, active_thresholds)
     if revenue_warn:
         warnings.append(revenue_warn)
 

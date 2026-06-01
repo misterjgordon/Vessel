@@ -1,0 +1,11 @@
+{
+  "source_workbook": "Interview Case Study - Finance Solution Developer - CLEAN.xlsx",
+  "source_sheet": "Sample Data for Testing",
+  "description": "Median purchase-price÷TEU ratio per exact TEU size from the case-study sample vessels (2+ rows per TEU).",
+  "medians_by_teu": {
+    "7000": 11428.57142857143,
+    "8000": 11250.0,
+    "10000": 10000.0,
+    "12000": 9583.333333333334
+  }
+}

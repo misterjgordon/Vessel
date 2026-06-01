@@ -1,3 +1,4 @@
+# Run: uv run --extra dev pytest tests/unit/test_valuation.py -v
 """Valuation engine tests — verified against the case-study Excel workbook."""
 
 from datetime import date

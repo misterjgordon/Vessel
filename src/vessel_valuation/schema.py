@@ -9,12 +9,10 @@ SIGNAL_BAND: float = 0.02
 
 @dataclass
 class VesselInputs:
-    """Validated canonical inputs for a single vessel DCF valuation.
+    """Validated inputs for a single vessel DCF valuation.
 
     Instances only exist after Tier 1 validation passes. All numeric
     fields are coerced to their declared types by the validation layer.
-    ``residual_value`` is resolved before Tier 2 runs: if not supplied
-    directly it is derived as ``lw_tonnage * SCRAP_RATE_PER_TONNE``.
     ``purchase_date`` is required — it anchors the cashflow schedule to
     real calendar dates (each year-end is Dec 31 of purchase_year + t).
     """
@@ -37,6 +35,22 @@ class VesselInputs:
     purchase_date: date
     engine_type: str | None = None
     co2_carbon_factor: float | None = None
+
+
+@dataclass
+class ValidationThresholds:
+    """Tier 2 TEU benchmark warning sensitivity.
+
+    Defaults match the case-study sample data (D-009). The app may supply
+    overrides per session; validation logic reads these values only via
+    parameters, not module globals.
+    """
+
+    revenue_band: float = 5_000.0
+    price_tolerance: float = 0.10
+
+
+DEFAULT_VALIDATION_THRESHOLDS = ValidationThresholds()
 
 
 @dataclass

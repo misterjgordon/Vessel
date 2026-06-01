@@ -29,6 +29,9 @@ build-backend = 'setuptools.build_meta'
 [tool.setuptools.packages.find]
 where = ['src']
 
+[tool.setuptools.package-data]
+vessel_valuation = ['data/*.json']
+
 [tool.pytest.ini_options]
 pythonpath = ['src']
 testpaths = ['tests']
@@ -43,7 +46,11 @@ quote-style = 'single'
 
 [tool.ruff.lint]
 select = ['E', 'F', 'W', 'I', 'UP', 'Q', 'D']
-ignore = ['D100', 'D101', 'D102', 'D103', 'D104', 'D105']
+ignore = ['D100', 'D101', 'D102', 'D103', 'D104', 'D105', 'I001']
+
+[tool.ruff.lint.per-file-ignores]
+# Test module docstrings: run command + description (numpy D400/D205 not applied).
+'tests/**/*.py' = ['D400', 'D205']
 
 [tool.ruff.lint.flake8-quotes]
 inline-quotes = 'single'

@@ -172,7 +172,7 @@ def compute_npv_irr(inputs: VesselInputs) -> ValuationResult:
 
     Builds the cashflow schedule, derives NPV and IRR, and adds the
     payback year and investment signal. Breakeven rate, sensitivity,
-    and scenario results are populated separately by ``insights.py``.
+    and scenario results are populated separately by ``decision_insights``.
 
     Parameters
     ----------

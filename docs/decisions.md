@@ -23,7 +23,7 @@ Each entry records what was decided, why, and any trade-offs acknowledged.
 
 ## D-003 · Data Model: Typed Dataclass for Vessel Inputs
 
-**Decision:** All vessel inputs are represented by a single Python `dataclass` (`VesselInputs`). Field names are the canonical header names for both the UI and file upload parser.
+**Decision:** All vessel inputs are represented by a single Python `dataclass` (`VesselInputs`). Field names are shared by the UI form and file upload header row.
 **Reason:** A single source of truth for field names prevents drift between the form, the file parser, the validation layer, and the calculation engine. Downstream code only ever receives a validated `VesselInputs` instance.
 **Trade-offs:** Adds a mapping step from raw Excel/CSV column names to dataclass fields. Acceptable given the small fixed field count.
 
@@ -50,7 +50,7 @@ Each entry records what was decided, why, and any trade-offs acknowledged.
 | Layer concept | Schema | What it holds |
 |---|---|---|
 | Bronze | `raw` | Every submission exactly as received — no transforms, nothing discarded |
-| Silver | `vessel` | Validated, normalised, canonical vessel inputs (one clean record per vessel) |
+| Silver | `vessel` | Validated, normalised vessel inputs (one clean record per vessel) |
 | Gold | `vessel` | Computed results: NPV, IRR, cashflows, sensitivity runs, scenario outputs |
 
 **Reason:** The medallion pattern ensures no raw data is ever lost (always recoverable), provides a clean audit trail from submission → validation → computation, and gives a natural upgrade path (re-run silver→gold computations without re-ingesting). Keeping names business-domain means the code is readable to finance stakeholders, not just engineers.
@@ -73,7 +73,7 @@ Each entry records what was decided, why, and any trade-offs acknowledged.
 
 ## D-020 · TEU Benchmark Table: Self-Improving Gold Layer
 
-**Decision:** A `vessel.benchmarks` gold table stores the median purchase price per TEU bucket (TEU rounded to nearest 500). It is seeded from the 9 valid sample vessels on first migration and rebuilt automatically every time a vessel is saved to `vessel.inputs`. For TEU sizes with no exact bucket entry, the validation layer linearly interpolates between the two nearest adjacent buckets. If no interpolation is possible (fewer than two neighbours), the Tier 2 purchase price check is skipped with an info notice.
+**Decision:** A `vessel.benchmarks` gold table stores the median purchase price per TEU bucket (TEU rounded to nearest 1,000). It is seeded from the 9 valid sample vessels on first migration and rebuilt automatically every time a vessel is saved to `vessel.inputs`. For TEU sizes with no exact bucket entry, the validation layer linearly interpolates between the two nearest adjacent buckets. If no interpolation is possible (fewer than two neighbours), the Tier 2 purchase price check is skipped with an info notice.
 **Reason:** Hardcoded benchmark tables go stale. Making the DB the source of truth for benchmarks means accuracy improves naturally as the fleet registry grows. Linear interpolation gives reasonable coverage for intermediate TEU sizes without needing manual data entry.
 **Trade-offs:** Interpolation assumes a roughly linear price-to-TEU relationship, which is a simplification. In production, a more sophisticated regression could be applied. For this prototype, linear interpolation between adjacent buckets is sufficient and explainable.
 
@@ -119,8 +119,8 @@ Each entry records what was decided, why, and any trade-offs acknowledged.
 
 ## D-018 · Configuration: .env File via python-dotenv
 
-**Decision:** All environment-specific configuration (DATABASE_URL, app port, debug flag) is loaded from a `.env` file via `python-dotenv`. The `.env` file is gitignored; a `.env.example` with placeholder values is committed.
-**Reason:** Standard practice for secrets management in Python applications. Allows Docker Compose, local dev, and CI to each supply their own values without code changes.
+**Decision:** All environment-specific configuration (DATABASE_URL, app port, debug flag) is loaded from a `.env` file via `python-dotenv` in `config.py`. The `.env` file is gitignored; a `.env.example` with placeholder values is committed. Feature modules read settings through `config` getters, not `os.environ` directly.
+**Reason:** Standard practice for secrets management in Python applications. Allows Docker Compose, local dev, and CI to each supply their own values without code changes. Centralising URL defaults documents runtime (in-memory SQLite) vs migration (file SQLite) vs Postgres behaviour in one place.
 
 ---
 
@@ -160,11 +160,11 @@ The 2% spread (discount rate minus inflation) represents the real required retur
 ## D-012 · Dash Layout: Two Views
 
 **Decision:** The app has two views accessible via a tab or nav bar.
-- **View 1 — Investment Summary**: Input panel, NPV/IRR output cards, scenario analysis table (Best/Base/Worst), inflation scenario comparison.
-- **View 2 — Calculation Detail**: Year-by-year cash flow table replicating the Excel Calculation sheet (Revenue, OpEx, CapEx, Free Cash Flow, Discounted Cash Flow per year).
-**Reason:** View 1 is for decision-makers who want a headline number. View 2 is for analysts who want to audit the model or trace a specific year. Separating them keeps View 1 uncluttered.
+- **View 1 — Investment Summary**: Input panel, NPV/IRR output cards, scenario analysis table (Best/Base/Worst), inflation scenario comparison. Headline metrics first; no year-by-year table here.
+- **View 2 — Calculation Detail**: Year-by-year cash flow table replicating the Excel Calculation sheet. A scenario selector (Best / Base / Worst / **Inputs** for the form’s own rates) drives which schedule is shown; schedules come from `decision_insights/scenario_schedules.py`, not from ad hoc callback logic.
+**Reason:** View 1 is for decision-makers who want a headline number. View 2 is for analysts who want to audit the model or trace a specific year. Separating them keeps View 1 uncluttered. Per-year schedules for alternate scenarios are computed in a dedicated module (same rate overrides as `scenario_returns`) so View 1 summaries and View 2 detail stay aligned.
 
 ## D-007 · UI/Engine Separation
 
-**Decision:** Dash callback functions contain zero business logic. Every callback's job is exactly: collect inputs → call a function from `model.py`, `insights.py`, or `persistence.py` → pass the result to a Dash component. No formulas, no data transforms, no SQL in callbacks.
+**Decision:** Dash callback functions contain zero business logic. Every callback's job is exactly: collect inputs → call a function from `model.py`, `decision_insights/`, or `db/repository.py` → pass the result to a Dash component. No formulas, no data transforms, no SQL in callbacks.
 **Reason:** Makes the entire engine independently testable without a running browser. The same `compute_npv_irr()` that the UI calls is what `make test` exercises. Swapping Dash for an API or notebook later requires no changes to any logic module.
