@@ -66,7 +66,6 @@ CHART_SENSITIVITY = 'chart-sensitivity'
 INPUT_REV_MIN = 'input-rev-min'
 INPUT_REV_MAX = 'input-rev-max'
 TABLE_SCENARIOS = 'table-scenarios'
-META_READONLY = 'meta-readonly'
 
 SELECT_SCENARIO = 'select-scenario'
 SELECT_CALCULATION_VESSEL = 'select-calculation-vessel'

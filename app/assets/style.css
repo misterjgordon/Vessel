@@ -280,23 +280,6 @@
   background: #c8e6c9;
 }
 
-.scenario-table {
-  border-collapse: collapse;
-  margin-bottom: 1rem;
-}
-
-.scenario-table th,
-.scenario-table td {
-  border: 1px solid #ddd;
-  padding: 0.4rem 0.75rem;
-  text-align: right;
-}
-
-.scenario-table th:first-child,
-.scenario-table td:first-child {
-  text-align: left;
-}
-
 .placeholder {
   color: #888;
   font-style: italic;
@@ -328,6 +311,24 @@
   flex-wrap: wrap;
   gap: 1rem;
   margin: 0.75rem 0;
+}
+
+.sensitivity-range {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 0.75rem 0;
+}
+
+.sensitivity-field label {
+  display: block;
+  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
+}
+
+.sensitivity-field input {
+  width: 10rem;
+  box-sizing: border-box;
 }
 
 .compare-select {

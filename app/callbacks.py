@@ -14,7 +14,6 @@ from app.serialization import (
     schedules_from_store,
     schedules_to_store,
     valuation_to_store,
-    vessel_inputs_from_store,
     vessel_inputs_to_form_values,
     vessel_inputs_to_store,
 )
@@ -35,13 +34,12 @@ from app.views.investment import (
     MODAL_OPEN_CLASS,
     collect_form_values,
     format_irr,
-    format_metadata,
     format_npv,
     format_payback_year,
     format_rate_per_day,
     format_saved_vessel_option_label,
     format_signal_label,
-    scenario_table,
+    scenario_table_rows,
 )
 from vessel_valuation.db.connection import session_scope
 from vessel_valuation.db.repository import (
@@ -828,14 +826,13 @@ def register_callbacks(app: Dash, session_factory: sessionmaker[Session]) -> Non
         Output(cid.CARD_SIGNAL, 'children'),
         Output(cid.CARD_BREAKEVEN, 'children'),
         Output(cid.CARD_PAYBACK, 'children'),
-        Output(cid.META_READONLY, 'children'),
-        Output(cid.TABLE_SCENARIOS, 'children'),
+        Output(cid.TABLE_SCENARIOS, 'data'),
         Output(cid.CHART_SENSITIVITY, 'figure'),
         Input(cid.STORE_COMPUTE, 'data'),
     )
     def render_investment_results(
         store: dict[str, object] | None,
-    ) -> tuple[object, object, object, object, object, object, object, object]:
+    ) -> tuple[object, object, object, object, object, object, object]:
         """Render View 1 outputs from the compute store."""
         empty = '—'
         empty_figure: dict[str, object] = {
@@ -849,8 +846,7 @@ def register_callbacks(app: Dash, session_factory: sessionmaker[Session]) -> Non
                 empty,
                 empty,
                 empty,
-                html.Div(),
-                scenario_table(),
+                scenario_table_rows(),
                 empty_figure,
             )
 
@@ -875,12 +871,7 @@ def register_callbacks(app: Dash, session_factory: sessionmaker[Session]) -> Non
 
         scenarios = valuation['scenarios']
         assert isinstance(scenarios, dict)
-        scenarios_table = scenario_table(scenarios)
-
-        inputs_raw = store['inputs']
-        assert isinstance(inputs_raw, dict)
-        inputs = vessel_inputs_from_store(inputs_raw)
-        meta = format_metadata(inputs)
+        scenarios_rows = scenario_table_rows(scenarios)
         signal_css = _signal_css_class(signal)
 
         return (
@@ -889,8 +880,7 @@ def register_callbacks(app: Dash, session_factory: sessionmaker[Session]) -> Non
             html.Span(format_signal_label(signal), className=signal_css),
             format_rate_per_day(breakeven),
             format_payback_year(payback),
-            meta,
-            scenarios_table,
+            scenarios_rows,
             figure,
         )
 

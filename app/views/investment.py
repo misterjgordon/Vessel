@@ -1,6 +1,6 @@
 """View 1 — investment summary (inputs, results, sensitivity, scenarios)."""
 
-from dash import dcc, html
+from dash import dash_table, dcc, html
 
 from app import component_ids as cid
 from app.form_defaults import FORM_DEFAULTS
@@ -9,7 +9,6 @@ from app.serialization import _float_field
 from vessel_valuation.db.repository import VesselInputSummary
 from vessel_valuation.decision_insights.scenario_analysis import DEFAULT_SCENARIO_BUNDLES
 from vessel_valuation.file_parser import ACCEPTED_UPLOAD_EXTENSIONS, REQUIRED_COLUMNS
-from vessel_valuation.schema import VesselInputs
 
 _FORM_SPECS: tuple[tuple[str, str, str], ...] = (
     ('vessel_name', 'Vessel name', cid.INPUT_VESSEL_NAME),
@@ -332,22 +331,41 @@ def investment_view() -> html.Div:
                 ],
                 className='metric-row',
             ),
-            html.Div(id=cid.META_READONLY, className='meta-readonly'),
             html.Hr(),
             html.H3('Scenarios'),
             html.P(
                 'Fixed Best / Base / Worst bundles (macro inflation and discount rates).',
                 className='help-text',
             ),
-            html.Div(id=cid.TABLE_SCENARIOS),
+            dash_table.DataTable(
+                id=cid.TABLE_SCENARIOS,
+                columns=scenario_table_columns(),  # pyright: ignore[reportArgumentType]
+                data=scenario_table_rows(),
+                style_table={'overflowX': 'auto'},
+                style_cell={'textAlign': 'right', 'padding': '6px'},
+                style_cell_conditional=[
+                    {'if': {'column_id': 'scenario'}, 'textAlign': 'left'},
+                ],
+                style_header={'fontWeight': 'bold'},
+            ),
             html.Hr(),
             html.H3('Sensitivity — IRR vs revenue per day'),
             html.Div(
                 [
-                    html.Label('Revenue min ($/day)'),
-                    dcc.Input(id=cid.INPUT_REV_MIN, type='number', placeholder='auto'),
-                    html.Label('Revenue max ($/day)'),
-                    dcc.Input(id=cid.INPUT_REV_MAX, type='number', placeholder='auto'),
+                    html.Div(
+                        [
+                            html.Label('Revenue min ($/day)'),
+                            dcc.Input(id=cid.INPUT_REV_MIN, type='number', placeholder='auto'),
+                        ],
+                        className='sensitivity-field',
+                    ),
+                    html.Div(
+                        [
+                            html.Label('Revenue max ($/day)'),
+                            dcc.Input(id=cid.INPUT_REV_MAX, type='number', placeholder='auto'),
+                        ],
+                        className='sensitivity-field',
+                    ),
                 ],
                 className='sensitivity-range',
             ),
@@ -459,21 +477,23 @@ def format_signal_label(signal: str) -> str:
     return labels.get(signal, signal)
 
 
-def scenario_table(
+def scenario_table_columns() -> list[dict[str, str]]:
+    """Return DataTable column definitions for Best / Base / Worst scenarios."""
+    return [
+        {'name': 'Scenario', 'id': 'scenario'},
+        {'name': 'Inflation', 'id': 'inflation'},
+        {'name': 'Discount', 'id': 'discount'},
+        {'name': 'NPV', 'id': 'npv'},
+        {'name': 'IRR', 'id': 'irr'},
+        {'name': 'Signal', 'id': 'signal'},
+    ]
+
+
+def scenario_table_rows(
     scenarios: dict[str, dict[str, object]] | None = None,
-) -> html.Table:
-    """Render scenario assumptions and NPV / IRR / signal in one table."""
-    header = html.Tr(
-        [
-            html.Th('Scenario'),
-            html.Th('Inflation'),
-            html.Th('Discount'),
-            html.Th('NPV'),
-            html.Th('IRR'),
-            html.Th('Signal'),
-        ]
-    )
-    rows: list[html.Tr] = []
+) -> list[dict[str, str]]:
+    """Build scenario table rows with rate assumptions and optional valuation results."""
+    rows: list[dict[str, str]] = []
     for bundle in DEFAULT_SCENARIO_BUNDLES:
         result = scenarios.get(bundle.name) if scenarios else None
         if result is not None:
@@ -485,32 +505,16 @@ def scenario_table(
         else:
             npv_cell = irr_cell = signal_cell = '—'
         rows.append(
-            html.Tr(
-                [
-                    html.Td(bundle.name),
-                    html.Td(f'{bundle.inflation_rate:.0%}'),
-                    html.Td(f'{bundle.discount_rate:.0%}'),
-                    html.Td(npv_cell),
-                    html.Td(irr_cell),
-                    html.Td(signal_cell),
-                ]
-            )
+            {
+                'scenario': bundle.name,
+                'inflation': f'{bundle.inflation_rate:.0%}',
+                'discount': f'{bundle.discount_rate:.0%}',
+                'npv': npv_cell,
+                'irr': irr_cell,
+                'signal': signal_cell,
+            }
         )
-    return html.Table([html.Thead(header), html.Tbody(rows)], className='scenario-table')
-
-
-def format_metadata(inputs: VesselInputs) -> html.Div:
-    """Read-only optional metadata (D-011)."""
-    parts: list[str] = []
-    if inputs.engine_type:
-        parts.append(f'Engine: {inputs.engine_type}')
-    if inputs.co2_carbon_factor is not None:
-        parts.append(f'CO2 factor: {inputs.co2_carbon_factor}')
-    if inputs.lw_tonnage:
-        parts.append(f'LWT: {inputs.lw_tonnage:,.0f} t')
-    if not parts:
-        return html.Div()
-    return html.Div([html.H4('Metadata'), html.P(' · '.join(parts))])
+    return rows
 
 
 def collect_form_values(*values: str | int | float | None) -> dict[str, str | int | float | None]:
