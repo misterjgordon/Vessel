@@ -39,7 +39,7 @@ class VesselInputs:
 
 @dataclass
 class ValidationThresholds:
-    """Tier 2 TEU benchmark warning sensitivity.
+    """Business-rule TEU benchmark warning sensitivity.
 
     Defaults match the case-study sample data (D-009). The app may supply
     overrides per session; validation logic reads these values only via
@@ -115,14 +115,28 @@ def _empty_scenario_results() -> dict[str, ScenarioResult]:
 
 
 @dataclass
-class ValuationResult:
-    """Computed DCF outputs for a single vessel and scenario."""
+class DcfResult:
+    """Core DCF outputs from ``dcf.compute_npv_irr`` — schedule, NPV, IRR, and signal.
+
+    Does not include decision-insight fields (breakeven, sensitivity, scenarios).
+    Those are attached by ``decision_insights.enrich`` in a ``ValuationResult``.
+    """
 
     npv: float
     irr: float | None
     schedule: list[CashflowYear]
     payback_year: int | None
     investment_signal: str
+
+
+@dataclass
+class ValuationResult(DcfResult):
+    """Enriched valuation — DCF core plus decision-insight analytics.
+
+    Returned by ``decision_insights.enrich`` and persisted in the gold
+    ``vessel_valuations`` table. Insight fields are empty until enrichment runs.
+    """
+
     breakeven_rate: float | None = None
     sensitivity: list[SensitivityPoint] = field(default_factory=_empty_sensitivity_points)
     scenarios: dict[str, ScenarioResult] = field(default_factory=_empty_scenario_results)

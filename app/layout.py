@@ -15,7 +15,7 @@ def app_layout() -> html.Div:
             html.Header(
                 [
                     html.H1('Vessel Valuation'),
-                    html.P('DCF investment analysis — Welles case study'),
+                    html.P('DCF investment analysis'),
                 ],
                 className='app-header',
             ),

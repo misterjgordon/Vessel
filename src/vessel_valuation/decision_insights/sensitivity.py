@@ -2,7 +2,7 @@
 
 import dataclasses
 
-from vessel_valuation.model import build_schedule, calculate_irr
+from vessel_valuation.dcf import build_schedule, calculate_irr
 from vessel_valuation.schema import SensitivityPoint, VesselInputs
 
 _SENSITIVITY_STEP: int = 1_000

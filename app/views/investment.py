@@ -299,7 +299,12 @@ def investment_view() -> html.Div:
             html.Div(_manual_form(), className='input-form'),
             html.Div(
                 [
-                    html.Button('Calculate valuation', id=cid.BTN_CALCULATE, n_clicks=0),
+                    html.Button(
+                        'Calculate valuation',
+                        id=cid.BTN_CALCULATE,
+                        n_clicks=0,
+                        className='btn-calculate',
+                    ),
                     html.Button('Save to database', id=cid.BTN_SAVE_TO_DB, n_clicks=0),
                 ],
                 className='valuation-actions',

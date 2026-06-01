@@ -271,6 +271,15 @@
   background: #ebebeb;
 }
 
+.valuation-actions .btn-calculate {
+  background: #e8f5e9;
+  border-color: #66bb6a;
+}
+
+.valuation-actions .btn-calculate:hover {
+  background: #c8e6c9;
+}
+
 .scenario-rates,
 .scenario-summary {
   border-collapse: collapse;

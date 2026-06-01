@@ -1,11 +1,9 @@
 """Full valuation enrichment — core DCF plus all decision-insight layers."""
 
-import dataclasses
-
 from vessel_valuation.decision_insights.breakeven import breakeven_revenue
 from vessel_valuation.decision_insights.scenario_analysis import scenario_returns
 from vessel_valuation.decision_insights.sensitivity import sensitivity_analysis
-from vessel_valuation.model import compute_npv_irr
+from vessel_valuation.dcf import compute_npv_irr
 from vessel_valuation.schema import ScenarioBundle, ValuationResult, VesselInputs
 
 
@@ -40,8 +38,12 @@ def enrich(
         and ``scenarios``.
     """
     base = compute_npv_irr(inputs)
-    return dataclasses.replace(
-        base,
+    return ValuationResult(
+        npv=base.npv,
+        irr=base.irr,
+        schedule=base.schedule,
+        payback_year=base.payback_year,
+        investment_signal=base.investment_signal,
         breakeven_rate=breakeven_revenue(inputs),
         sensitivity=sensitivity_analysis(inputs, rev_min, rev_max),
         scenarios=scenario_returns(inputs, bundles),

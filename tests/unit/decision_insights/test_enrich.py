@@ -4,13 +4,14 @@
 import pytest
 
 from vessel_valuation.decision_insights.enrich import enrich
-from vessel_valuation.schema import ValuationResult, VesselInputs
+from vessel_valuation.schema import DcfResult, ValuationResult, VesselInputs
 
 
 def test_enrich_returns_valuation_result(base_inputs: VesselInputs) -> None:
-    """Enrich returns a ValuationResult domain object."""
+    """Enrich returns a ValuationResult that extends the core DcfResult fields."""
     result = enrich(base_inputs)
     assert isinstance(result, ValuationResult)
+    assert isinstance(result, DcfResult)
 
 
 def test_enrich_breakeven_is_populated(base_inputs: VesselInputs) -> None:

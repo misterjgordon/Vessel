@@ -6,7 +6,7 @@ import dataclasses
 import pytest
 
 from vessel_valuation.decision_insights.breakeven import breakeven_revenue
-from vessel_valuation.model import build_schedule, calculate_npv
+from vessel_valuation.dcf import build_schedule, calculate_npv
 from vessel_valuation.schema import VesselInputs
 
 

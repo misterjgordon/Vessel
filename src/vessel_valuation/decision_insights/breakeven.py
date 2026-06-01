@@ -4,7 +4,7 @@ import dataclasses
 
 from scipy.optimize import brentq
 
-from vessel_valuation.model import build_schedule, calculate_npv
+from vessel_valuation.dcf import build_schedule, calculate_npv
 from vessel_valuation.schema import VesselInputs
 
 _BREAKEVEN_HI: float = 1_000_000.0

@@ -2,7 +2,7 @@
 
 import dataclasses
 
-from vessel_valuation.model import (
+from vessel_valuation.dcf import (
     build_schedule,
     calculate_irr,
     calculate_npv,

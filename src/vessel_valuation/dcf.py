@@ -7,17 +7,9 @@ from scipy.optimize import brentq
 from vessel_valuation.schema import (
     SIGNAL_BAND,
     CashflowYear,
-    ValuationResult,
+    DcfResult,
     VesselInputs,
 )
-
-__all__ = [
-    'build_schedule',
-    'calculate_irr',
-    'calculate_npv',
-    'compute_npv_irr',
-    'investment_signal',
-]
 
 
 def _year_end(base_year: int, t: int) -> date:
@@ -37,7 +29,7 @@ def build_schedule(inputs: VesselInputs) -> list[CashflowYear]:
     Parameters
     ----------
     inputs
-        Validated vessel inputs from the Tier 1/2 validation layer.
+        Validated vessel inputs from the structural and business-rule layers.
 
     Returns
     -------
@@ -167,8 +159,8 @@ def _payback_year(schedule: list[CashflowYear]) -> int | None:
     return None
 
 
-def compute_npv_irr(inputs: VesselInputs) -> ValuationResult:
-    """Compute the full DCF valuation for one vessel.
+def compute_npv_irr(inputs: VesselInputs) -> DcfResult:
+    """Compute core DCF outputs for one vessel.
 
     Builds the cashflow schedule, derives NPV and IRR, and adds the
     payback year and investment signal. Breakeven rate, sensitivity,
@@ -181,15 +173,15 @@ def compute_npv_irr(inputs: VesselInputs) -> ValuationResult:
 
     Returns
     -------
-    ValuationResult
-        Core valuation outputs; ``sensitivity`` and ``scenarios`` are empty.
+    DcfResult
+        Schedule, NPV, IRR, payback, and investment signal only.
     """
     schedule = build_schedule(inputs)
     net_cashflows: list[float] = [row.net_cashflow for row in schedule]
     npv = calculate_npv(schedule, inputs.discount_rate)
     irr = calculate_irr(net_cashflows)
 
-    return ValuationResult(
+    return DcfResult(
         npv=npv,
         irr=irr,
         schedule=schedule,

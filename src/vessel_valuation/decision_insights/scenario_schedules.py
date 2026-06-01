@@ -3,7 +3,7 @@
 import dataclasses
 
 from vessel_valuation.decision_insights.scenario_analysis import DEFAULT_SCENARIO_BUNDLES
-from vessel_valuation.model import build_schedule, compute_npv_irr
+from vessel_valuation.dcf import build_schedule, compute_npv_irr
 from vessel_valuation.schema import CashflowYear, ScenarioBundle, VesselInputs
 
 INPUTS_SCENARIO_NAME = 'Inputs'

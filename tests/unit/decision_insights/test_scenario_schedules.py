@@ -6,7 +6,7 @@ from vessel_valuation.decision_insights.scenario_schedules import (
     INPUTS_SCENARIO_NAME,
     scenario_schedules,
 )
-from vessel_valuation.model import compute_npv_irr
+from vessel_valuation.dcf import compute_npv_irr
 from vessel_valuation.schema import VesselInputs
 
 

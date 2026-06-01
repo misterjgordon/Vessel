@@ -1,13 +1,15 @@
-# Run: uv run --extra dev pytest tests/unit/test_valuation.py -v
-"""Valuation engine tests — verified against the case-study Excel workbook."""
+"""DCF engine tests — verified against the case-study Excel workbook.
+
+uv run --extra dev pytest tests/unit/test_dcf.py -v
+"""
 
 from datetime import date
 
 import pytest
 
+from vessel_valuation.dcf import compute_npv_irr
 from vessel_valuation.excel_reference import read_basic_inputs
-from vessel_valuation.model import compute_npv_irr
-from vessel_valuation.schema import VesselInputs
+from vessel_valuation.schema import DcfResult, VesselInputs
 
 
 def _vessel_inputs_from_basic_sheet(path) -> VesselInputs:
@@ -42,6 +44,13 @@ def _vessel_inputs_from_basic_sheet(path) -> VesselInputs:
         teu_size=10000,
         purchase_date=purchase_date,
     )
+
+
+def test_compute_npv_irr_returns_dcf_result(case_study_xlsx) -> None:
+    """compute_npv_irr returns a DcfResult without decision-insight fields."""
+    inputs = _vessel_inputs_from_basic_sheet(case_study_xlsx)
+    result = compute_npv_irr(inputs)
+    assert isinstance(result, DcfResult)
 
 
 def test_compute_npv_irr_matches_basic_sheet(case_study_xlsx) -> None:

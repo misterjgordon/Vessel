@@ -7,7 +7,7 @@ from vessel_valuation.decision_insights.scenario_analysis import (
     DEFAULT_SCENARIO_BUNDLES,
     scenario_returns,
 )
-from vessel_valuation.model import compute_npv_irr
+from vessel_valuation.dcf import compute_npv_irr
 from vessel_valuation.schema import ScenarioBundle, VesselInputs
 
 
