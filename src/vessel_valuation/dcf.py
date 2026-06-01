@@ -66,12 +66,14 @@ def build_schedule(inputs: VesselInputs) -> list[CashflowYear]:
 
         opex = inputs.opex_per_day * inputs.days_of_year * inflation_factor
 
-        is_drydock = (t % inputs.drydock_frequency == 0) and (t < inputs.vessel_life)
+        is_drydock = (t % inputs.drydock_frequency ==
+                      0) and (t < inputs.vessel_life)
         drydock_capex = inputs.drydock_capex * inflation_factor if is_drydock else 0.0
         upgrades_capex = inputs.upgrades_capex * inflation_factor
 
         fcf = annual_revenue - opex - drydock_capex - upgrades_capex
-        net_cf = fcf + (inputs.residual_value if t == inputs.vessel_life else 0.0)
+        net_cf = fcf + (inputs.residual_value if t ==
+                        inputs.vessel_life else 0.0)
         cumulative += net_cf
 
         schedule.append(

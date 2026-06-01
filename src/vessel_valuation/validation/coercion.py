@@ -82,6 +82,7 @@ def coerce_inputs(raw: dict[str, object]) -> VesselInputs:
         days_of_year=req_int('days_of_year'),
         teu_size=req_int('teu_size'),
         purchase_date=pd,
-        engine_type=str(raw['engine_type']) if raw.get('engine_type') else None,
+        engine_type=str(raw['engine_type']) if raw.get(
+            'engine_type') else None,
         co2_carbon_factor=to_float(raw, 'co2_carbon_factor'),
     )

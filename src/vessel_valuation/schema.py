@@ -138,5 +138,7 @@ class ValuationResult(DcfResult):
     """
 
     breakeven_rate: float | None = None
-    sensitivity: list[SensitivityPoint] = field(default_factory=_empty_sensitivity_points)
-    scenarios: dict[str, ScenarioResult] = field(default_factory=_empty_scenario_results)
+    sensitivity: list[SensitivityPoint] = field(
+        default_factory=_empty_sensitivity_points)
+    scenarios: dict[str, ScenarioResult] = field(
+        default_factory=_empty_scenario_results)
