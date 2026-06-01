@@ -280,25 +280,20 @@
   background: #c8e6c9;
 }
 
-.scenario-rates,
-.scenario-summary {
+.scenario-table {
   border-collapse: collapse;
   margin-bottom: 1rem;
 }
 
-.scenario-rates th,
-.scenario-rates td,
-.scenario-summary th,
-.scenario-summary td {
+.scenario-table th,
+.scenario-table td {
   border: 1px solid #ddd;
   padding: 0.4rem 0.75rem;
   text-align: right;
 }
 
-.scenario-rates th:first-child,
-.scenario-rates td:first-child,
-.scenario-summary th:first-child,
-.scenario-summary td:first-child {
+.scenario-table th:first-child,
+.scenario-table td:first-child {
   text-align: left;
 }
 
@@ -366,23 +361,6 @@
 
 .btn-danger:hover {
   background: #991b1b;
-}
-
-.exec-summary {
-  padding: 0.75rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  background: #fafafa;
-}
-
-.exec-summary-title {
-  margin: 0 0 0.5rem;
-  font-size: 1.1rem;
-}
-
-.exec-summary-list {
-  margin: 0 0 0.75rem 1.25rem;
-  padding: 0;
 }
 
 .signal-invest {

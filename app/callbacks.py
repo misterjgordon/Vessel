@@ -34,7 +34,6 @@ from app.views.investment import (
     MODAL_HIDDEN_CLASS,
     MODAL_OPEN_CLASS,
     collect_form_values,
-    executive_summary_panel,
     format_irr,
     format_metadata,
     format_npv,
@@ -42,7 +41,7 @@ from app.views.investment import (
     format_rate_per_day,
     format_saved_vessel_option_label,
     format_signal_label,
-    scenario_summary_table,
+    scenario_table,
 )
 from vessel_valuation.db.connection import session_scope
 from vessel_valuation.db.repository import (
@@ -824,41 +823,35 @@ def register_callbacks(app: Dash, session_factory: sessionmaker[Session]) -> Non
         return updated_store, banner_text, banner_class
 
     @app.callback(
-        Output(cid.EXEC_SUMMARY, 'children'),
         Output(cid.CARD_NPV, 'children'),
         Output(cid.CARD_IRR, 'children'),
         Output(cid.CARD_SIGNAL, 'children'),
         Output(cid.CARD_BREAKEVEN, 'children'),
         Output(cid.CARD_PAYBACK, 'children'),
-        Output(cid.CHART_SENSITIVITY, 'figure'),
-        Output(cid.TABLE_SCENARIOS, 'children'),
         Output(cid.META_READONLY, 'children'),
+        Output(cid.TABLE_SCENARIOS, 'children'),
+        Output(cid.CHART_SENSITIVITY, 'figure'),
         Input(cid.STORE_COMPUTE, 'data'),
     )
     def render_investment_results(
         store: dict[str, object] | None,
-    ) -> tuple[object, object, object, object, object, object, object, object, object]:
+    ) -> tuple[object, object, object, object, object, object, object, object]:
         """Render View 1 outputs from the compute store."""
         empty = '—'
-        empty_summary = html.P(
-            'Run Calculate valuation or load from the database to see the executive summary.',
-            className='help-text',
-        )
         empty_figure: dict[str, object] = {
             'data': [],
             'layout': {'title': 'Run a valuation to see sensitivity'},
         }
         if store is None or 'valuation' not in store:
             return (
-                empty_summary,
                 empty,
                 empty,
                 empty,
                 empty,
                 empty,
+                html.Div(),
+                scenario_table(),
                 empty_figure,
-                html.Div(),
-                html.Div(),
             )
 
         valuation = store['valuation']
@@ -882,37 +875,23 @@ def register_callbacks(app: Dash, session_factory: sessionmaker[Session]) -> Non
 
         scenarios = valuation['scenarios']
         assert isinstance(scenarios, dict)
-        scenario_table = scenario_summary_table(scenarios)
+        scenarios_table = scenario_table(scenarios)
 
         inputs_raw = store['inputs']
         assert isinstance(inputs_raw, dict)
         inputs = vessel_inputs_from_store(inputs_raw)
         meta = format_metadata(inputs)
-
-        warnings_raw = store.get('warnings')
-        warnings = [str(w) for w in warnings_raw] if isinstance(warnings_raw, list) else []
-        stored_id_raw = store.get('vessel_input_id')
-        vessel_input_id = stored_id_raw if isinstance(stored_id_raw, int) else None
-
-        summary = executive_summary_panel(
-            inputs.vessel_name,
-            vessel_input_id,
-            valuation,
-            warnings,
-            inputs.discount_rate,
-        )
         signal_css = _signal_css_class(signal)
 
         return (
-            summary,
             format_npv(npv),
             format_irr(irr),
             html.Span(format_signal_label(signal), className=signal_css),
             format_rate_per_day(breakeven),
             format_payback_year(payback),
-            figure,
-            scenario_table,
             meta,
+            scenarios_table,
+            figure,
         )
 
     @app.callback(

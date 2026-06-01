@@ -312,9 +312,6 @@ def investment_view() -> html.Div:
             html.Div(id=cid.BANNER_VALIDATION, className='validation-banner'),
             _settings_panel(),
             html.Hr(),
-            html.H3('Executive summary'),
-            html.Div(id=cid.EXEC_SUMMARY, className='exec-summary'),
-            html.Hr(),
             html.H3('Results'),
             html.Div(
                 [
@@ -337,6 +334,13 @@ def investment_view() -> html.Div:
             ),
             html.Div(id=cid.META_READONLY, className='meta-readonly'),
             html.Hr(),
+            html.H3('Scenarios'),
+            html.P(
+                'Fixed Best / Base / Worst bundles (macro inflation and discount rates).',
+                className='help-text',
+            ),
+            html.Div(id=cid.TABLE_SCENARIOS),
+            html.Hr(),
             html.H3('Sensitivity — IRR vs revenue per day'),
             html.Div(
                 [
@@ -348,14 +352,6 @@ def investment_view() -> html.Div:
                 className='sensitivity-range',
             ),
             dcc.Graph(id=cid.CHART_SENSITIVITY),
-            html.Hr(),
-            html.H3('Scenarios'),
-            html.P(
-                'Fixed Best / Base / Worst bundles (macro inflation and discount rates).',
-                className='help-text',
-            ),
-            scenario_rates_table(),
-            html.Div(id=cid.TABLE_SCENARIOS),
         ],
         className='view-investment',
     )
@@ -423,22 +419,6 @@ def dash_table_placeholder():
     )
 
 
-def scenario_rates_table() -> html.Table:
-    """Render default scenario rate assumptions."""
-    header = html.Tr([html.Th(''), html.Th('Inflation'), html.Th('Discount')])
-    body_rows = [
-        html.Tr(
-            [
-                html.Td(bundle.name),
-                html.Td(f'{bundle.inflation_rate:.0%}'),
-                html.Td(f'{bundle.discount_rate:.0%}'),
-            ]
-        )
-        for bundle in DEFAULT_SCENARIO_BUNDLES
-    ]
-    return html.Table([html.Thead(header), html.Tbody(body_rows)], className='scenario-rates')
-
-
 def format_npv(value: float) -> str:
     """Format NPV for display."""
     sign = '-' if value < 0 else ''
@@ -479,53 +459,44 @@ def format_signal_label(signal: str) -> str:
     return labels.get(signal, signal)
 
 
-def executive_summary_panel(
-    vessel_name: str,
-    vessel_input_id: int | None,
-    valuation: dict[str, object],
-    warnings: list[str],
-    discount_rate: float,
-) -> html.Div:
-    """Render a short leadership-oriented summary from compute-store data."""
-    npv = _float_field(valuation, 'npv')
-    irr_raw = valuation['irr']
-    irr = _float_field(valuation, 'irr') if irr_raw is not None else None
-    signal = str(valuation['investment_signal'])
-    breakeven_raw = valuation['breakeven_rate']
-    breakeven = _float_field(valuation, 'breakeven_rate') if breakeven_raw is not None else None
-    payback_raw = valuation.get('payback_year')
-    payback: int | None = None
-    if isinstance(payback_raw, int):
-        payback = payback_raw
-    elif isinstance(payback_raw, float):
-        payback = int(payback_raw)
-
-    bullets: list[html.Li] = [
-        html.Li(
-            html.Strong('Recommendation: '),
-            format_signal_label(signal),
-        ),
-        html.Li(f'NPV {format_npv(npv)} at {discount_rate:.0%} discount rate'),
-        html.Li(f'IRR {format_irr(irr)} vs hurdle {discount_rate:.0%}'),
-        html.Li(f'Breakeven charter rate {format_rate_per_day(breakeven)}'),
-        html.Li(f'Undiscounted payback in year {format_payback_year(payback)}'),
-    ]
-    if warnings:
-        bullets.append(html.Li(html.Strong('Data warnings: '), '; '.join(warnings)))
-
-    saved_line = (
-        f'Saved as database entry #{vessel_input_id} — available in Compare and Load from database.'
-        if vessel_input_id is not None
-        else 'Not saved to database yet — click Save to database after calculating.'
-    )
-
-    return html.Div(
+def scenario_table(
+    scenarios: dict[str, dict[str, object]] | None = None,
+) -> html.Table:
+    """Render scenario assumptions and NPV / IRR / signal in one table."""
+    header = html.Tr(
         [
-            html.P(html.Strong(vessel_name), className='exec-summary-title'),
-            html.Ul(bullets, className='exec-summary-list'),
-            html.P(saved_line, className='help-text'),
+            html.Th('Scenario'),
+            html.Th('Inflation'),
+            html.Th('Discount'),
+            html.Th('NPV'),
+            html.Th('IRR'),
+            html.Th('Signal'),
         ]
     )
+    rows: list[html.Tr] = []
+    for bundle in DEFAULT_SCENARIO_BUNDLES:
+        result = scenarios.get(bundle.name) if scenarios else None
+        if result is not None:
+            assert isinstance(result, dict)
+            npv_cell = format_npv(_float_field(result, 'npv'))
+            irr_raw = result['irr']
+            irr_cell = format_irr(_float_field(result, 'irr') if irr_raw is not None else None)
+            signal_cell = str(result['investment_signal'])
+        else:
+            npv_cell = irr_cell = signal_cell = '—'
+        rows.append(
+            html.Tr(
+                [
+                    html.Td(bundle.name),
+                    html.Td(f'{bundle.inflation_rate:.0%}'),
+                    html.Td(f'{bundle.discount_rate:.0%}'),
+                    html.Td(npv_cell),
+                    html.Td(irr_cell),
+                    html.Td(signal_cell),
+                ]
+            )
+        )
+    return html.Table([html.Thead(header), html.Tbody(rows)], className='scenario-table')
 
 
 def format_metadata(inputs: VesselInputs) -> html.Div:
@@ -540,41 +511,6 @@ def format_metadata(inputs: VesselInputs) -> html.Div:
     if not parts:
         return html.Div()
     return html.Div([html.H4('Metadata'), html.P(' · '.join(parts))])
-
-
-def scenario_summary_table(
-    scenarios: dict[str, dict[str, object]],
-) -> html.Table:
-    """Render NPV / IRR / signal for each scenario."""
-    header = html.Tr(
-        [
-            html.Th('Scenario'),
-            html.Th('NPV'),
-            html.Th('IRR'),
-            html.Th('Signal'),
-        ]
-    )
-    rows: list[html.Tr] = []
-    for name in ('Best', 'Base', 'Worst'):
-        if name not in scenarios:
-            continue
-        row = scenarios[name]
-        assert isinstance(row, dict)
-        npv = _float_field(row, 'npv')
-        irr_raw = row['irr']
-        irr = _float_field(row, 'irr') if irr_raw is not None else None
-        signal = str(row['investment_signal'])
-        rows.append(
-            html.Tr(
-                [
-                    html.Td(name),
-                    html.Td(format_npv(npv)),
-                    html.Td(format_irr(irr)),
-                    html.Td(signal),
-                ]
-            )
-        )
-    return html.Table([html.Thead(header), html.Tbody(rows)], className='scenario-summary')
 
 
 def collect_form_values(*values: str | int | float | None) -> dict[str, str | int | float | None]:
