@@ -50,7 +50,7 @@ def test_scenario_investment_signal_populated(base_inputs: VesselInputs) -> None
     """Each default scenario result carries a valid investment signal label."""
     results = scenario_returns(base_inputs)
     for name, res in results.items():
-        assert res.investment_signal in {'INVEST', 'MARGINAL', 'DO NOT INVEST'}, (
+        assert res.investment_signal in {'FAVORABLE', 'MARGINAL', 'UNFAVORABLE'}, (
             f'{name} has unexpected signal: {res.investment_signal}'
         )
 

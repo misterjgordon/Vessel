@@ -132,19 +132,19 @@ def calculate_irr(net_cashflows: list[float]) -> float | None:
 
 
 def investment_signal(irr: float | None, discount_rate: float) -> str:
-    """Classify the investment relative to the discount rate hurdle.
+    """Classify economics relative to the discount rate hurdle.
 
-    INVEST     IRR exceeds discount_rate by more than SIGNAL_BAND.
-    MARGINAL   IRR is within SIGNAL_BAND of discount_rate.
-    DO NOT INVEST  IRR is below discount_rate by more than SIGNAL_BAND,
-                   or no IRR could be computed.
+    FAVORABLE    IRR exceeds discount_rate by more than SIGNAL_BAND.
+    MARGINAL     IRR is within SIGNAL_BAND of discount_rate.
+    UNFAVORABLE  IRR is below discount_rate by more than SIGNAL_BAND,
+                 or no IRR could be computed.
     """
     if irr is None:
-        return 'DO NOT INVEST'
+        return 'UNFAVORABLE'
     if irr > discount_rate + SIGNAL_BAND:
-        return 'INVEST'
+        return 'FAVORABLE'
     if irr < discount_rate - SIGNAL_BAND:
-        return 'DO NOT INVEST'
+        return 'UNFAVORABLE'
     return 'MARGINAL'
 
 

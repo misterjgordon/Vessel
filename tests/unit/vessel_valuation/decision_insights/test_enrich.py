@@ -47,4 +47,4 @@ def test_enrich_payback_and_signal_from_base_valuation(base_inputs: VesselInputs
     """Enrich copies payback year and investment signal from the base valuation."""
     result = enrich(base_inputs)
     assert result.payback_year is not None
-    assert result.investment_signal in {'INVEST', 'MARGINAL', 'DO NOT INVEST'}
+    assert result.investment_signal in {'FAVORABLE', 'MARGINAL', 'UNFAVORABLE'}

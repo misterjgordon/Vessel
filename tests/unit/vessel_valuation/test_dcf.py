@@ -198,11 +198,11 @@ def test_calculate_irr_returns_none_when_no_root() -> None:
 @pytest.mark.parametrize(
     ('irr', 'discount_rate', 'expected'),
     [
-        (0.15, 0.10, 'INVEST'),
+        (0.15, 0.10, 'FAVORABLE'),
         (0.10 + SIGNAL_BAND, 0.10, 'MARGINAL'),
         (0.10 - SIGNAL_BAND, 0.10, 'MARGINAL'),
-        (0.05, 0.10, 'DO NOT INVEST'),
-        (None, 0.10, 'DO NOT INVEST'),
+        (0.05, 0.10, 'UNFAVORABLE'),
+        (None, 0.10, 'UNFAVORABLE'),
     ],
 )
 def test_investment_signal_bands(

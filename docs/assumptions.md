@@ -72,17 +72,19 @@ Key assumptions underpinning the DCF model. These follow standard corporate fina
 
 ## Revenue per Day — Normal Range
 
-- Expected revenue per day varies by vessel size (TEU capacity). Benchmarks derived from sample data:
+- Revenue-per-day checks use a fixed ±$5,000 dollar band around a seeded anchor—not a percentage.
+- Expected revenue per day varies by vessel size (TEU capacity). Anchors derived from sample data (TEU rounded to the nearest 1,000 before lookup):
 
-  | TEU class | Expected range |
-  |-----------|----------------|
+  | TEU class | Anchor rate |
+  |-----------|-------------|
   | 7,000 TEU | ~$40,000/day |
   | 8,000 TEU | ~$45,000/day |
   | 10,000 TEU | ~$50,000/day |
   | 12,000 TEU | ~$54,000/day |
 
-- A value more than $5,000 outside the expected range for the vessel's TEU class triggers a Tier 2 warning.
-- These benchmarks are stubs based on 10 sample vessels and will need updating with real market data in production.
+- A Tier 2 warning fires when `|entered rate − anchor| > $5,000`—symmetric above and below. Exactly $5,000 away from the anchor does not warn (e.g. $45,000/day or $55,000/day for a $50,000 anchor); $44,999/day or $55,001/day does.
+- Effective daily revenue (after off-hire) below OpEx per day triggers a separate Tier 2 warning; that check is independent of the TEU anchor band.
+- These anchors are stubs based on 10 sample vessels and will need updating with real market data in production.
 
 ## Residual Value
 

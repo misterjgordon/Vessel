@@ -488,9 +488,12 @@ def format_payback_year(value: int | None) -> str:
 def format_signal_label(signal: str) -> str:
     """Human-readable investment signal with CSS hook."""
     labels = {
-        'INVEST': 'Invest — IRR clearly above hurdle',
+        'FAVORABLE': 'Favorable — IRR clearly above hurdle',
         'MARGINAL': 'Marginal — IRR near hurdle',
-        'DO NOT INVEST': 'Do not invest — IRR below hurdle or not computable',
+        'UNFAVORABLE': 'Unfavorable — IRR below hurdle or not computable',
+        # Legacy values from saved rows before signal rename
+        'INVEST': 'Favorable — IRR clearly above hurdle',
+        'DO NOT INVEST': 'Unfavorable — IRR below hurdle or not computable',
     }
     return labels.get(signal, signal)
 
@@ -536,7 +539,7 @@ def scenario_table_rows(
             npv_cell = format_npv(json_float(result['npv'], 'npv'))
             irr_raw = result['irr']
             irr_cell = format_irr(json_float(result['irr'], 'irr') if irr_raw is not None else None)
-            signal_cell = str(result['investment_signal'])
+            signal_cell = format_signal_label(str(result['investment_signal']))
         else:
             npv_cell = irr_cell = signal_cell = '—'
         rows.append(

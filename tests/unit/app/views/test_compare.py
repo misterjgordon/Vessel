@@ -36,7 +36,7 @@ def _valuation(schedule: list[CashflowYear], npv: float = 1.0) -> ValuationResul
         irr=0.1,
         schedule=schedule,
         payback_year=5,
-        investment_signal='INVEST',
+        investment_signal='FAVORABLE',
     )
 
 
@@ -95,4 +95,4 @@ def test_build_compare_summary_rows_formats_metrics() -> None:
 
     assert rows[0]['vessel'] == 'Alpha'
     assert rows[0]['npv'] == '$1.50m'
-    assert rows[0]['signal'].startswith('Invest')
+    assert rows[0]['signal'].startswith('Favorable')

@@ -262,8 +262,11 @@ def sensitivity_figure(sensitivity: list[dict[str, object]]) -> dict[str, object
 def signal_css_class(signal: str) -> str:
     """Map investment signal to a presentation CSS class."""
     return {
-        'INVEST': 'signal-invest',
+        'FAVORABLE': 'signal-invest',
         'MARGINAL': 'signal-marginal',
+        'UNFAVORABLE': 'signal-reject',
+        # Legacy values from saved rows before signal rename
+        'INVEST': 'signal-invest',
         'DO NOT INVEST': 'signal-reject',
     }.get(signal, '')
 
