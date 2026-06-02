@@ -21,8 +21,7 @@ def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
     @app.callback(
         Output(cid.SELECT_SAVED_VESSEL, 'options'),
         Output(cid.SELECT_SAVED_VESSELS_DELETE, 'options'),
-        Output(cid.SELECT_COMPARE_A, 'options'),
-        Output(cid.SELECT_COMPARE_B, 'options'),
+        Output(cid.SELECT_COMPARE_VESSELS, 'options'),
         Output(cid.SELECT_CALCULATION_VESSEL, 'options'),
         Input(cid.BTN_CALCULATE, 'n_clicks'),
         Input(cid.BTN_SAVE_TO_DB, 'n_clicks'),
@@ -40,9 +39,8 @@ def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
         list[dict[str, str | int]],
         list[dict[str, str | int]],
         list[dict[str, str | int]],
-        list[dict[str, str | int]],
     ]:
         """Populate saved-vessel dropdowns from the database."""
         with session_scope(session_factory) as session:
             options = vessel_dropdown_options(session)
-        return options, options, options, options, options
+        return options, options, options, options

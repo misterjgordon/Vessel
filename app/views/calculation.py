@@ -1,6 +1,5 @@
 """View 2 — year-by-year cashflow table (presentation / pivot only)."""
 
-from datetime import date
 from typing import TYPE_CHECKING
 
 import plotly.graph_objects as go
@@ -9,23 +8,14 @@ from dash import dcc
 from dash import html
 
 from app import component_ids as cid
+from app.cashflow_display import CASHFLOW_LINE_ITEMS
+from app.cashflow_display import CASHFLOW_MONEY_FIELDS
+from app.cashflow_display import format_money
+from app.cashflow_display import format_period_header
 from vessel_valuation.decision_insights.scenario_schedules import INPUTS_SCENARIO_NAME
 
 if TYPE_CHECKING:
     from vessel_valuation.schema import CashflowYear
-
-_LINE_ITEMS: tuple[tuple[str, str], ...] = (
-    ('revenue', 'Revenue'),
-    ('opex', 'OpEx'),
-    ('drydock_capex', 'Drydock CapEx'),
-    ('upgrades_capex', 'Upgrades CapEx'),
-    ('free_cashflow', 'Free cashflow'),
-    ('net_cashflow', 'Net cashflow'),
-    ('discounted_cashflow', 'Discounted CF'),
-    ('cumulative_cashflow', 'Cumulative CF'),
-)
-
-_MONEY_FIELDS = frozenset(field for field, _label in _LINE_ITEMS)
 
 _EMPTY_CASHFLOW_FIGURE: dict[str, object] = {
     'data': [],
@@ -113,10 +103,10 @@ def schedule_to_dcf_table(
     columns: list[dict[str, str]] = [{'name': 'Line item', 'id': 'line_item'}]
     for row in schedule:
         period_id = row.period_end.isoformat()
-        columns.append({'name': _format_period_header(row.period_end), 'id': period_id})
+        columns.append({'name': format_period_header(row.period_end), 'id': period_id})
 
     rows: list[dict[str, str]] = []
-    for field, label in _LINE_ITEMS:
+    for field, label in CASHFLOW_LINE_ITEMS:
         record: dict[str, str] = {'line_item': label}
         for row in schedule:
             period_id = row.period_end.isoformat()
@@ -139,7 +129,7 @@ def build_cashflow_chart_figure(schedule: list[CashflowYear]) -> dict[str, objec
             mode='lines+markers',
             name=label,
         )
-        for field, label in _LINE_ITEMS
+        for field, label in CASHFLOW_LINE_ITEMS
     ]
     fig = go.Figure(data=traces)
     fig.update_layout(
@@ -152,21 +142,7 @@ def build_cashflow_chart_figure(schedule: list[CashflowYear]) -> dict[str, objec
     return fig.to_dict()
 
 
-def _format_period_header(period_end: date) -> str:
-    return period_end.strftime('%d %b %Y')
-
-
 def _format_cell(field: str, value: float) -> str:
-    if field in _MONEY_FIELDS:
-        return _format_money(value)
+    if field in CASHFLOW_MONEY_FIELDS:
+        return format_money(value)
     return str(value)
-
-
-def _format_money(value: float) -> str:
-    sign = '-' if value < 0 else ''
-    absolute = abs(value)
-    if absolute >= 1_000_000:
-        return f'{sign}${absolute / 1_000_000:,.2f}m'
-    if absolute >= 1_000:
-        return f'{sign}${absolute / 1_000:,.1f}k'
-    return f'{sign}${absolute:,.0f}'

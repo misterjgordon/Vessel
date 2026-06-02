@@ -18,9 +18,15 @@ from app.views.calculation import build_cashflow_chart_figure
 from app.views.calculation import empty_cashflow_figure
 from app.views.calculation import empty_dcf_columns
 from app.views.calculation import schedule_to_dcf_table
+from app.cashflow_display import cashflow_line_item_label
+from app.views.compare import CompareVessel
 from app.views.compare import build_compare_figure
-from app.views.compare import build_compare_rows
-from app.views.compare import compare_table_columns
+from app.views.compare import build_compare_schedule_rows
+from app.views.compare import build_compare_summary_rows
+from app.views.compare import compare_schedule_columns
+from app.views.compare import compare_summary_columns
+from app.views.compare import parse_compare_vessel_selection
+from app.views.compare import validate_compare_metric
 from app.views.investment import format_irr
 from app.views.investment import format_npv
 from app.views.investment import format_payback_year
@@ -41,72 +47,88 @@ if TYPE_CHECKING:
 def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
     """Register view render callbacks."""
 
+    def _empty_compare_outputs(
+        message: str = '',
+    ) -> tuple[object, object, object, object, object, object]:
+        return (
+            compare_summary_columns(),
+            [],
+            EMPTY_COMPARE_FIGURE,
+            compare_schedule_columns(),
+            [],
+            message,
+        )
+
     @app.callback(
+        Output(cid.TABLE_COMPARE_SUMMARY, 'columns'),
+        Output(cid.TABLE_COMPARE_SUMMARY, 'data'),
         Output(cid.CHART_COMPARE, 'figure'),
         Output(cid.TABLE_COMPARE, 'columns'),
         Output(cid.TABLE_COMPARE, 'data'),
         Output(cid.COMPARE_PLACEHOLDER, 'children'),
         Input(cid.BTN_COMPARE, 'n_clicks'),
-        State(cid.SELECT_COMPARE_A, 'value'),
-        State(cid.SELECT_COMPARE_B, 'value'),
+        Input(cid.SELECT_COMPARE_METRIC, 'value'),
+        State(cid.SELECT_COMPARE_VESSELS, 'value'),
         prevent_initial_call=True,
     )
     def on_compare_vessels(
         n_clicks: int | None,
-        vessel_a_id: int | None,
-        vessel_b_id: int | None,
-    ) -> tuple[object, object, object, object]:
-        """Overlay and tabulate free cash flow for two saved valuations."""
+        metric_field: str | None,
+        vessel_ids_raw: list[int] | list[str] | int | float | str | None,
+    ) -> tuple[object, object, object, object, object, object]:
+        """Summary metrics plus one schedule line item across selected saved valuations."""
         if not n_clicks:
-            return EMPTY_COMPARE_FIGURE, compare_table_columns(), [], ''
+            return _empty_compare_outputs()
 
-        if vessel_a_id is None or vessel_b_id is None:
-            return (
-                EMPTY_COMPARE_FIGURE,
-                compare_table_columns(),
-                [],
-                'Select two saved vessels.',
-            )
-        if vessel_a_id == vessel_b_id:
-            return (
-                EMPTY_COMPARE_FIGURE,
-                compare_table_columns(),
-                [],
-                'Choose two different vessels to compare.',
-            )
+        vessel_ids, selection_message = parse_compare_vessel_selection(vessel_ids_raw)
+        if vessel_ids is None:
+            return _empty_compare_outputs(selection_message)
 
+        field = validate_compare_metric(metric_field)
+        metric_label = cashflow_line_item_label(field)
+
+        entries: list[CompareVessel] = []
         with session_scope(session_factory) as session:
-            inputs_a = get_vessel_inputs(session, vessel_a_id)
-            inputs_b = get_vessel_inputs(session, vessel_b_id)
-            valuation_a = get_valuation(session, vessel_a_id)
-            valuation_b = get_valuation(session, vessel_b_id)
+            for vessel_input_id in vessel_ids:
+                inputs = get_vessel_inputs(session, vessel_input_id)
+                valuation = get_valuation(session, vessel_input_id)
+                if inputs is None:
+                    return _empty_compare_outputs(
+                        'One or more saved vessels were not found.',
+                    )
+                if valuation is None:
+                    return _empty_compare_outputs(
+                        'Every selected vessel needs a saved valuation '
+                        '(run Calculate first).',
+                    )
+                entries.append(
+                    CompareVessel(
+                        vessel_input_id=vessel_input_id,
+                        vessel_name=inputs.vessel_name,
+                        valuation=valuation,
+                    )
+                )
 
-        if inputs_a is None or inputs_b is None:
-            return (
-                EMPTY_COMPARE_FIGURE,
-                compare_table_columns(),
-                [],
-                'One or both saved vessels were not found.',
-            )
-        if valuation_a is None or valuation_b is None:
-            return (
-                EMPTY_COMPARE_FIGURE,
-                compare_table_columns(),
-                [],
-                'Both vessels need a saved valuation (run Calculate first).',
-            )
-
-        name_a = inputs_a.vessel_name
-        name_b = inputs_b.vessel_name
-        figure = build_compare_figure(
-            name_a,
-            valuation_a.schedule,
-            name_b,
-            valuation_b.schedule,
+        vessel_columns = [
+            (entry.vessel_input_id, entry.vessel_name) for entry in entries
+        ]
+        include_delta = len(entries) == 2
+        figure = build_compare_figure(entries, field, metric_label)
+        summary_rows = build_compare_summary_rows(entries)
+        schedule_rows = build_compare_schedule_rows(entries, field)
+        schedule_columns = compare_schedule_columns(
+            vessel_columns,
+            metric_label,
+            include_delta=include_delta,
         )
-        table_rows = build_compare_rows(valuation_a.schedule, valuation_b.schedule)
-        columns = compare_table_columns(name_a, name_b)
-        return figure, columns, table_rows, ''
+        return (
+            compare_summary_columns(),
+            summary_rows,
+            figure,
+            schedule_columns,
+            schedule_rows,
+            '',
+        )
 
     @app.callback(
         Output(cid.CARD_NPV, 'children'),

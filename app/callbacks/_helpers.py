@@ -46,7 +46,7 @@ FORM_NO_UPDATES = (no_update,) * len(FORM_COMPONENT_IDS)
 
 EMPTY_COMPARE_FIGURE: dict[str, object] = {
     'data': [],
-    'layout': {'title': 'Select two vessels and click Compare'},
+    'layout': {'title': 'Select vessels and line item, then click Compare'},
 }
 
 

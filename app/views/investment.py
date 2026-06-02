@@ -60,7 +60,7 @@ def _workflow_help_text() -> str:
     return (
         '1. Edit the vessel form directly, upload a file, or load a saved entry from the database. '
         '2. Click Calculate valuation, then Save to database when you want to persist. '
-        '3. Compare vessels tab — pick two saved entries from the database.'
+        '3. Compare vessels tab — pick 2–20 saved entries and one line item to overlay.'
     )
 
 
