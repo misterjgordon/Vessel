@@ -214,6 +214,12 @@ def test_investment_signal_bands(
     assert investment_signal(irr, discount_rate) == expected
 
 
+def test_investment_signal_respects_custom_band() -> None:
+    """A wider signal band keeps borderline IRR in the marginal zone."""
+    assert investment_signal(0.11, 0.10, signal_band=0.05) == 'MARGINAL'
+    assert investment_signal(0.16, 0.10, signal_band=0.05) == 'FAVORABLE'
+
+
 def test_compute_npv_irr_npv_matches_calculate_npv(base_inputs: VesselInputs) -> None:
     """Integrated NPV equals ``calculate_npv`` on the built schedule."""
     result = compute_npv_irr(base_inputs)

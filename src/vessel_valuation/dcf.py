@@ -131,19 +131,23 @@ def calculate_irr(net_cashflows: list[float]) -> float | None:
         return None
 
 
-def investment_signal(irr: float | None, discount_rate: float) -> str:
+def investment_signal(
+    irr: float | None,
+    discount_rate: float,
+    signal_band: float = SIGNAL_BAND,
+) -> str:
     """Classify economics relative to the discount rate hurdle.
 
-    FAVORABLE    IRR exceeds discount_rate by more than SIGNAL_BAND.
-    MARGINAL     IRR is within SIGNAL_BAND of discount_rate.
-    UNFAVORABLE  IRR is below discount_rate by more than SIGNAL_BAND,
+    FAVORABLE    IRR exceeds discount_rate by more than ``signal_band``.
+    MARGINAL     IRR is within ``signal_band`` of discount_rate.
+    UNFAVORABLE  IRR is below discount_rate by more than ``signal_band``,
                  or no IRR could be computed.
     """
     if irr is None:
         return 'UNFAVORABLE'
-    if irr > discount_rate + SIGNAL_BAND:
+    if irr > discount_rate + signal_band:
         return 'FAVORABLE'
-    if irr < discount_rate - SIGNAL_BAND:
+    if irr < discount_rate - signal_band:
         return 'UNFAVORABLE'
     return 'MARGINAL'
 
@@ -156,7 +160,10 @@ def _payback_year(schedule: list[CashflowYear]) -> int | None:
     return None
 
 
-def compute_npv_irr(inputs: VesselInputs) -> DcfResult:
+def compute_npv_irr(
+    inputs: VesselInputs,
+    signal_band: float = SIGNAL_BAND,
+) -> DcfResult:
     """Compute core DCF outputs for one vessel.
 
     Builds the cashflow schedule, derives NPV and IRR, and adds the
@@ -183,5 +190,9 @@ def compute_npv_irr(inputs: VesselInputs) -> DcfResult:
         irr=irr,
         schedule=schedule,
         payback_year=_payback_year(schedule),
-        investment_signal=investment_signal(irr, inputs.discount_rate),
+        investment_signal=investment_signal(
+            irr,
+            inputs.discount_rate,
+            signal_band=signal_band,
+        ),
     )

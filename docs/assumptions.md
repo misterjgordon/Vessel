@@ -15,7 +15,9 @@ Key assumptions underpinning the DCF model. These follow standard corporate fina
 
 - Revenue is **fixed** for the life of the vessel. It does not inflate.
 - This reflects a time-charter contract where the daily rate is locked at signing.
+- Not a bareboat charter: the owner bears OpEx and CapEx; the charterer does not operate the vessel in this model.
 - Off-hire reduces effective revenue days. During off-hire periods the vessel earns nothing but still incurs full OpEx.
+- **Inflation** escalates OpEx and CapEx only, not revenue: the charter rate is fixed for the contract term, so general inflation does not increase hire income in this model.
 
 ## Costs
 
@@ -44,6 +46,13 @@ Key assumptions underpinning the DCF model. These follow standard corporate fina
 
 - The discount rate represents the company's required return on investment (also called the hurdle rate).
 - It is applied uniformly across all years. No term structure is modelled.
+- **IRR** is solved on the same unlevered net cashflows as NPV: Year 0 is the full purchase price as a cash outflow; there is no debt, interest, or levered equity return.
+
+## Breakeven charter rate
+
+- Breakeven is the **gross** revenue per day (contract / time-charter rate) at which NPV equals zero, holding all other inputs fixed—including the entered **off-hire rate**.
+- It is **not** the effective daily rate after off-hire; effective revenue in the model is `revenue_per_day × (1 − offhire_rate)`.
+- Breakeven uses the same discount rate as the base-case NPV, not scenario overrides.
 
 ## Sensitivity Analysis
 
@@ -55,7 +64,9 @@ Key assumptions underpinning the DCF model. These follow standard corporate fina
 
 - Scenarios apply to inflation rate and discount rate together as paired bundles (Best/Base/Worst).
 - Pairing is required because the discount rate contains inflation expectations — separating them produces economically inconsistent scenarios (see Fisher equation).
-- Default bundles hold the real required return (discount rate minus inflation) constant at 2% across all scenarios.
+- Default **discount rates** for Best / Base / Worst are **8%**, **10%**, and **12%**, each paired with inflation **1%**, **3%**, and **5%** — Fisher-style bundles so macro stress moves nominal rates together rather than mixing unrelated inflation and hurdle assumptions.
+- Across those defaults, the **real** required return (hurdle above inflation) is held at **2%** for Best, Base, and Worst; the **Base** pair (3% inflation, 10% discount) matches the case-study reference inputs and golden tests.
+- In each default bundle, the **nominal** gap between discount rate and inflation is **7 percentage points** (e.g. 10% − 3%); that pairing comes from the case-study test data, not from a separate policy knob in the app.
 - Users may override individual values within a bundle; the tool warns but does not block inconsistent pairs.
 - The Base scenario always matches the originally entered assumptions. It is the default view.
 

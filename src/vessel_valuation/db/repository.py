@@ -27,6 +27,7 @@ from vessel_valuation.db.models import VesselValuationRow
 from vessel_valuation.decision_insights.enrich import enrich
 from vessel_valuation.mapping import vessel_inputs_from_object
 from vessel_valuation.mapping import vessel_inputs_kwargs
+from vessel_valuation.schema import SIGNAL_BAND
 from vessel_valuation.schema import CashflowYear
 from vessel_valuation.schema import ScenarioBundle
 from vessel_valuation.schema import ValuationResult
@@ -411,6 +412,7 @@ def persist_vessel_submission(
     rev_min: float | None = None,
     rev_max: float | None = None,
     scenario_bundles: list[ScenarioBundle] | None = None,
+    signal_band: float | None = None,
 ) -> PersistedVessel:
     """Run full pipeline: raw → validate → silver → enrich → gold → refresh benchmarks.
 
@@ -437,7 +439,14 @@ def persist_vessel_submission(
         )
 
     vessel_input_id = save_vessel_inputs(session, submission_id, inputs)
-    result = enrich(inputs, bundles=scenario_bundles, rev_min=rev_min, rev_max=rev_max)
+    active_signal_band = signal_band if signal_band is not None else SIGNAL_BAND
+    result = enrich(
+        inputs,
+        bundles=scenario_bundles,
+        rev_min=rev_min,
+        rev_max=rev_max,
+        signal_band=active_signal_band,
+    )
     valuation_id = save_valuation(session, vessel_input_id, result)
     refresh_benchmarks(session)
     session.flush()

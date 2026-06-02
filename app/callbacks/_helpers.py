@@ -7,6 +7,7 @@ import plotly.graph_objects as go
 from dash import Output
 from dash import no_update
 
+from app.form_defaults import DEFAULT_SIGNAL_BAND
 from app.form_defaults import FORM_DEFAULTS
 from app.form_formatting import format_form_field_value
 from app.serialization import schedules_from_store
@@ -24,6 +25,7 @@ from vessel_valuation.db.repository import list_vessels
 from vessel_valuation.decision_insights.scenario_schedules import scenario_schedules
 from vessel_valuation.file_parser import pp_teu_factor_benchmarks_for_subject
 from vessel_valuation.mapping import VesselInputField
+from vessel_valuation.schema import SIGNAL_BAND
 from vessel_valuation.serialize import json_float
 from vessel_valuation.serialize import scenario_bundles_from_json
 from vessel_valuation.serialize import scenario_bundles_to_json
@@ -129,6 +131,7 @@ def build_compute_store(
     source: str,
     rev_min: float | None,
     rev_max: float | None,
+    signal_band: float,
     vessel_input_id: int | None = None,
 ) -> dict[str, object]:
     """Serialize an in-memory valuation for the compute store."""
@@ -146,6 +149,7 @@ def build_compute_store(
             'source': source,
             'rev_min': rev_min,
             'rev_max': rev_max,
+            'signal_band': signal_band,
             'scenario_bundles': scenario_bundles_to_json(scenario_bundles),
         }
     return store_data
@@ -223,6 +227,26 @@ def optional_float(value: float | str | int | None) -> float | None:
     if value is None or value == '':
         return None
     return float(value)
+
+
+def parse_signal_band(value: float | str | int | None) -> float:
+    """Coerce settings input to a valid investment-signal band (decimal)."""
+    if value is None or value == '':
+        return SIGNAL_BAND
+    try:
+        band = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            'Investment signal band must be a number (e.g. 0.02 for 2 percentage points).'
+        ) from exc
+    if band <= 0 or band >= 1:
+        raise ValueError('Investment signal band must be greater than 0 and less than 1.')
+    return band
+
+
+def default_signal_band_value() -> float:
+    """Default signal-band setting for reset and initial layout."""
+    return DEFAULT_SIGNAL_BAND
 
 
 def sensitivity_figure(sensitivity: list[dict[str, object]]) -> dict[str, object]:

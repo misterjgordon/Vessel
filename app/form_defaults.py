@@ -2,6 +2,8 @@
 
 from datetime import date
 
+from vessel_valuation.schema import SIGNAL_BAND
+
 # Representative base-case values aligned with decision-insights test fixtures.
 FORM_DEFAULTS: dict[str, str | int | float | None] = {
     'vessel_name': 'Base Case',
@@ -23,3 +25,5 @@ FORM_DEFAULTS: dict[str, str | int | float | None] = {
     'engine_type': '',
     'co2_carbon_factor': '',
 }
+
+DEFAULT_SIGNAL_BAND = SIGNAL_BAND

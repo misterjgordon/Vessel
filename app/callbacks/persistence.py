@@ -14,6 +14,8 @@ from app.callbacks._helpers import FORM_COMPONENT_IDS
 from app.callbacks._helpers import FORM_NO_UPDATES
 from app.callbacks._helpers import LOAD_FORM_OUTPUTS_DUPLICATE
 from app.callbacks._helpers import default_form_values_tuple
+from app.callbacks._helpers import default_signal_band_value
+from app.callbacks._helpers import parse_signal_band
 from app.callbacks._helpers import form_values_tuple
 from app.callbacks._helpers import normalize_vessel_input_ids
 from app.callbacks._helpers import optional_float
@@ -131,19 +133,21 @@ def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
         Output(cid.BANNER_VALIDATION, 'children', allow_duplicate=True),
         Output(cid.BANNER_VALIDATION, 'className', allow_duplicate=True),
         Output(cid.STORE_ACTIVE_INPUT_SOURCE, 'data', allow_duplicate=True),
+        Output(cid.INPUT_SIGNAL_BAND, 'value'),
         *LOAD_FORM_OUTPUTS_DUPLICATE,
         Input(cid.BTN_RESET_BASECASE, 'n_clicks'),
         prevent_initial_call=True,
     )
     def reset_form_to_basecase(n_clicks: int | None) -> tuple[object, ...]:
-        """Restore default base-case values on the vessel form."""
+        """Restore default base-case values on the vessel form and settings."""
         if not n_clicks:
-            return (no_update, no_update, no_update, *FORM_NO_UPDATES)
+            return (no_update, no_update, no_update, no_update, *FORM_NO_UPDATES)
         form_tuple = default_form_values_tuple()
         return (
-            'Form reset to base-case defaults.',
+            'Form and settings reset to base-case defaults.',
             'validation-banner ok',
             'manual',
+            default_signal_band_value(),
             *form_tuple,
         )
 
@@ -305,6 +309,16 @@ def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
             optional_float(cast('int | float | str', rev_max_raw)) if rev_max_raw is not None else None
         )
 
+        signal_band_raw = persist_context.get('signal_band')
+        try:
+            signal_band = parse_signal_band(
+                cast('float | str | int | None', signal_band_raw)
+                if signal_band_raw is not None
+                else None
+            )
+        except ValueError as exc:
+            return no_update, str(exc), 'validation-banner error'
+
         bundles_raw = persist_context.get('scenario_bundles')
         scenario_bundles = (
             scenario_bundles_from_json(cast('list[dict[str, object]]', bundles_raw))
@@ -324,6 +338,7 @@ def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
                     rev_min=rev_min_val,
                     rev_max=rev_max_val,
                     scenario_bundles=scenario_bundles,
+                    signal_band=signal_band,
                 )
             except ValueError as exc:
                 return no_update, str(exc), 'validation-banner error'

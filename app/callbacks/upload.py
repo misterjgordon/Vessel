@@ -39,6 +39,7 @@ def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
         Output(cid.UPLOAD_SELECTION_LABEL, 'children'),
         Output(cid.MODAL_UPLOAD, 'className'),
         Output(cid.STORE_ACTIVE_INPUT_SOURCE, 'data', allow_duplicate=True),
+        Output(cid.UPLOAD_FILE, 'contents'),
         Input(cid.UPLOAD_FILE, 'contents'),
         State(cid.UPLOAD_FILE, 'filename'),
         prevent_initial_call=True,
@@ -54,10 +55,20 @@ def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
         object,
         object,
         object,
+        object,
     ]:
         """Parse an uploaded file and populate the row summary table."""
         if contents is None or filename is None:
-            return no_update, no_update, no_update, no_update, no_update, no_update, no_update
+            return (
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+            )
 
         _content_type, content_string = contents.split(',', 1)
         raw_bytes = base64.b64decode(content_string)
@@ -83,6 +94,7 @@ def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
                 'Fix header errors above, then re-upload.',
                 MODAL_OPEN_CLASS,
                 'file',
+                None,
             )
 
         upload_rows: list[dict[str, object]] = []
@@ -120,6 +132,7 @@ def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
             'Click a row to load it into the vessel form.',
             MODAL_OPEN_CLASS,
             'file',
+            None,
         )
 
     @app.callback(

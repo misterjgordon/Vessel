@@ -211,6 +211,7 @@ def build_compare_figure(
         xaxis_title='Year',
         yaxis_title=f'{metric_label} ($)',
         template='plotly_white',
+        hoverlabel=dict(namelength=-1),
     )
     return fig.to_dict()
 

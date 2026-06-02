@@ -9,6 +9,7 @@ from dash.dash_table.Format import Format
 from dash.dash_table.Format import Scheme
 
 from app import component_ids as cid
+from app.form_defaults import DEFAULT_SIGNAL_BAND
 from app.form_defaults import FORM_DEFAULTS
 from app.table_styles import DATA_TABLE_CELL_STYLE
 from app.table_styles import DATA_TABLE_HEADER_STYLE
@@ -232,9 +233,30 @@ def _settings_panel() -> html.Details:
         [
             html.Summary('Settings'),
             html.P(
-                'Reset the vessel form to the default base-case values, or delete saved '
-                'entries from the database (Compare tab lists remaining entries).',
+                'Adjust investment-signal bands, reset the vessel form to base-case values, '
+                'or delete saved entries from the database (Compare tab lists remaining entries).',
                 className='help-text',
+            ),
+            html.Div(
+                [
+                    html.Label('Investment signal band (decimal)'),
+                    dcc.Input(
+                        id=cid.INPUT_SIGNAL_BAND,
+                        type='number',
+                        value=DEFAULT_SIGNAL_BAND,
+                        min=0,
+                        max=0.99,
+                        step=0.001,
+                        className='settings-input',
+                    ),
+                    html.P(
+                        'FAVORABLE when IRR exceeds the discount rate by more than this amount; '
+                        'MARGINAL within ± band; UNFAVORABLE below. '
+                        'Decimal rate (e.g. 0.02 = 2 pp, 0.005 = 0.5 pp).',
+                        className='help-text',
+                    ),
+                ],
+                className='settings-field',
             ),
             html.Div(
                 [

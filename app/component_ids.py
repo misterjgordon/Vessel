@@ -27,6 +27,7 @@ BTN_MODAL_DATABASE_CLOSE = 'btn-modal-database-close'
 BTN_MODAL_DATABASE_CANCEL = 'btn-modal-database-cancel'
 INPUT_SOURCE_UPLOAD_WRAP = 'input-source-upload-wrap'
 BTN_RESET_BASECASE = 'btn-reset-basecase'
+INPUT_SIGNAL_BAND = 'input-signal-band'
 
 SELECT_COMPARE_VESSELS = 'select-compare-vessels'
 SELECT_COMPARE_METRIC = 'select-compare-metric'

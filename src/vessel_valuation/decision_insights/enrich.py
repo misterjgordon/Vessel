@@ -4,6 +4,7 @@ from vessel_valuation.dcf import compute_npv_irr
 from vessel_valuation.decision_insights.breakeven import breakeven_revenue
 from vessel_valuation.decision_insights.scenario_analysis import scenario_returns
 from vessel_valuation.decision_insights.sensitivity import sensitivity_analysis
+from vessel_valuation.schema import SIGNAL_BAND
 from vessel_valuation.schema import ScenarioBundle
 from vessel_valuation.schema import ValuationResult
 from vessel_valuation.schema import VesselInputs
@@ -14,6 +15,7 @@ def enrich(
     bundles: list[ScenarioBundle] | None = None,
     rev_min: float | None = None,
     rev_max: float | None = None,
+    signal_band: float = SIGNAL_BAND,
 ) -> ValuationResult:
     """Compute a fully enriched valuation result for one vessel.
 
@@ -39,7 +41,7 @@ def enrich(
         All fields populated, including ``breakeven_rate``, ``sensitivity``,
         and ``scenarios``.
     """
-    base = compute_npv_irr(inputs)
+    base = compute_npv_irr(inputs, signal_band=signal_band)
     return ValuationResult(
         npv=base.npv,
         irr=base.irr,
@@ -48,5 +50,5 @@ def enrich(
         investment_signal=base.investment_signal,
         breakeven_rate=breakeven_revenue(inputs),
         sensitivity=sensitivity_analysis(inputs, rev_min, rev_max),
-        scenarios=scenario_returns(inputs, bundles),
+        scenarios=scenario_returns(inputs, bundles, signal_band=signal_band),
     )

@@ -12,6 +12,7 @@ from app import component_ids as cid
 from app.callbacks._debug_log import agent_debug_log
 from app.callbacks._helpers import build_compute_store
 from app.callbacks._helpers import optional_float
+from app.callbacks._helpers import parse_signal_band
 from app.serialization import form_values_to_raw
 from app.views.investment import collect_form_values
 from vessel_valuation.db.connection import session_scope
@@ -37,6 +38,7 @@ def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
         Input(cid.BTN_CALCULATE, 'n_clicks'),
         State(cid.INPUT_REV_MIN, 'value'),
         State(cid.INPUT_REV_MAX, 'value'),
+        State(cid.INPUT_SIGNAL_BAND, 'value'),
         # Scenario table must precede form fields: handler uses *form_values last.
         State(cid.TABLE_SCENARIOS, 'data'),
         State(cid.INPUT_VESSEL_NAME, 'value'),
@@ -63,6 +65,7 @@ def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
         n_clicks: int | None,
         rev_min: float | None,
         rev_max: float | None,
+        signal_band_raw: float | str | int | None,
         scenario_table_data: list[dict[str, object]] | None,
         *form_values: str | int | float | None,
     ) -> tuple[object, object, object]:
@@ -84,6 +87,11 @@ def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
 
         rev_min_val = optional_float(rev_min)
         rev_max_val = optional_float(rev_max)
+
+        try:
+            signal_band = parse_signal_band(signal_band_raw)
+        except ValueError as exc:
+            return no_update, str(exc), 'validation-banner error'
 
         try:
             scenario_bundles, scenario_warnings = resolve_scenario_bundles(scenario_table_data)
@@ -112,6 +120,7 @@ def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
                 bundles=scenario_bundles,
                 rev_min=rev_min_val,
                 rev_max=rev_max_val,
+                signal_band=signal_band,
             )
 
         warnings = list(validation.warnings)
@@ -128,6 +137,7 @@ def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
             source=source,
             rev_min=rev_min_val,
             rev_max=rev_max_val,
+            signal_band=signal_band,
         )
 
         banner_class = 'validation-banner warning' if warnings else 'validation-banner ok'

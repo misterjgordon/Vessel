@@ -6,6 +6,7 @@ from vessel_valuation.dcf import build_schedule
 from vessel_valuation.dcf import calculate_irr
 from vessel_valuation.dcf import calculate_npv
 from vessel_valuation.dcf import investment_signal
+from vessel_valuation.schema import SIGNAL_BAND
 from vessel_valuation.schema import ScenarioBundle
 from vessel_valuation.schema import ScenarioResult
 from vessel_valuation.schema import VesselInputs
@@ -22,6 +23,7 @@ DEFAULT_SCENARIO_BUNDLES: list[ScenarioBundle] = [
 def scenario_returns(
     inputs: VesselInputs,
     bundles: list[ScenarioBundle] | None = None,
+    signal_band: float = SIGNAL_BAND,
 ) -> dict[str, ScenarioResult]:
     """NPV, IRR, and investment signal for each Best/Base/Worst scenario bundle.
 
@@ -52,7 +54,11 @@ def scenario_returns(
         results[bundle.name] = ScenarioResult(
             npv=npv,
             irr=irr,
-            investment_signal=investment_signal(irr, bundle.discount_rate),
+            investment_signal=investment_signal(
+                irr,
+                bundle.discount_rate,
+                signal_band=signal_band,
+            ),
         )
 
     return results
