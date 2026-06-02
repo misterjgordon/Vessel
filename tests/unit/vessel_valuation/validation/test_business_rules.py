@@ -2,7 +2,7 @@
 #   tests/unit/vessel_valuation/validation/test_business_rules.py -v
 """Tests for ``validation.business_rules`` via ``validate``."""
 
-from tests.unit.vessel_valuation.validation.conftest import BASE_RAW, raw
+from tests.unit.vessel_valuation.validation.conftest import raw
 from vessel_valuation.case_study_benchmarks import load_case_study_pp_teu_benchmarks
 from vessel_valuation.schema import ValidationThresholds
 from vessel_valuation.validation import validate

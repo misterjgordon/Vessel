@@ -6,6 +6,8 @@ from datetime import date
 import pytest
 
 from vessel_valuation.mapping import (
+    VESSEL_INPUT_FIELD_NAMES,
+    VesselInputField,
     vessel_inputs_from_dict,
     vessel_inputs_from_object,
     vessel_inputs_to_dict,
@@ -49,14 +51,19 @@ def test_vessel_inputs_from_object_matches_dataclass(sample_inputs: VesselInputs
     assert vessel_inputs_from_object(sample_inputs) == sample_inputs
 
 
+def test_vessel_input_field_names_match_dataclass_fields() -> None:
+    """``VesselInputField`` values cover every ``VesselInputs`` field exactly once."""
+    assert frozenset(VesselInputField) == frozenset(VESSEL_INPUT_FIELD_NAMES)
+
+
 def test_vessel_inputs_to_form_raw_dict_uses_iso_date_and_empty_optionals(
     sample_inputs: VesselInputs,
 ) -> None:
     """Form raw dict uses ISO purchase date and empty strings for unset optionals."""
     raw = vessel_inputs_to_form_raw_dict(sample_inputs)
-    assert raw['purchase_date'] == '2025-12-31'
-    assert raw['engine_type'] == ''
-    assert raw['co2_carbon_factor'] == ''
+    assert raw[VesselInputField.PURCHASE_DATE] == '2025-12-31'
+    assert raw[VesselInputField.ENGINE_TYPE] == ''
+    assert raw[VesselInputField.CO2_CARBON_FACTOR] == ''
 
 
 def test_vessel_inputs_from_dict_rejects_non_iso_purchase_date() -> None:

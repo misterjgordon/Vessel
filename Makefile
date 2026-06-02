@@ -1,19 +1,19 @@
 .PHONY: sync test test-integration test-all lint format run dev docker-up docker-down docker-logs help
 
 sync:
-	uv sync --extra dev
+	uv sync
 
 test:
-	uv run --extra dev pytest tests/unit -v
+	uv run pytest tests/unit -v
 
 test-integration:
-	uv run --extra dev pytest tests/integration -v
+	uv run pytest tests/integration -v
 
 test-all: test test-integration
 
-lint:
-	uv run ruff check src tests app
-	uv run ruff format --check src tests app
+lint: ## run ruff/ty checking only, no formatting or fixing
+	@uv run ruff check --fix
+	@uv run ty check
 
 format:
 	uv run ruff format src tests app
@@ -39,11 +39,11 @@ docker-logs:
 	docker compose logs -f app
 
 help:
-	@echo "make sync              - install dependencies (uv sync --extra dev)"
+	@echo "make sync              - install dependencies (uv sync, includes dev group)"
 	@echo "make test              - run unit tests"
 	@echo "make test-integration  - run repository / DB integration tests"
 	@echo "make test-all          - run unit + integration tests"
-	@echo "make lint              - ruff check + format check"
+	@echo "make lint              - ruff check --fix + ty check"
 	@echo "make format            - ruff format src, tests, and app"
 	@echo "make dev               - local Dash + SQLite (http://localhost:8050, hot reload)"
 	@echo "make run               - local Dash without running migrations first"

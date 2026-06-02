@@ -3,11 +3,12 @@ pyproject.toml
 src/vessel_valuation/__init__.py
 src/vessel_valuation/case_study_benchmarks.py
 src/vessel_valuation/config.py
+src/vessel_valuation/dcf.py
 src/vessel_valuation/excel_reference.py
 src/vessel_valuation/file_parser.py
-src/vessel_valuation/model.py
+src/vessel_valuation/mapping.py
 src/vessel_valuation/schema.py
-src/vessel_valuation/validation.py
+src/vessel_valuation/serialize.py
 src/vessel_valuation.egg-info/PKG-INFO
 src/vessel_valuation.egg-info/SOURCES.txt
 src/vessel_valuation.egg-info/dependency_links.txt
@@ -26,3 +27,8 @@ src/vessel_valuation/decision_insights/enrich.py
 src/vessel_valuation/decision_insights/scenario_analysis.py
 src/vessel_valuation/decision_insights/scenario_schedules.py
 src/vessel_valuation/decision_insights/sensitivity.py
+src/vessel_valuation/validation/__init__.py
+src/vessel_valuation/validation/business_rules.py
+src/vessel_valuation/validation/coercion.py
+src/vessel_valuation/validation/structural_rules.py
+src/vessel_valuation/validation/types.py

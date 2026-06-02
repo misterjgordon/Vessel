@@ -1,5 +1,7 @@
 """Display and parse thousand-separated numbers in manual form fields."""
 
+from vessel_valuation.mapping import FormRawValue, VesselInputField, VesselInputFormRawDict
+
 # Whole-number fields shown with thousands separators (text inputs in the UI).
 COMMA_FORMATTED_FIELDS: frozenset[str] = frozenset(
     {
@@ -59,8 +61,8 @@ def parse_display_number(value: str | int | float | None) -> int | float | None:
 
 
 def format_form_field_value(
-    field_name: str, value: str | int | float | None
-) -> str | int | float | None:
+    field_name: VesselInputField | str, value: FormRawValue
+) -> FormRawValue:
     """Format a single form default or bound value for display."""
     if value is None or value == '':
         return value
@@ -70,15 +72,19 @@ def format_form_field_value(
 
 
 def format_form_values_for_display(
-    values: dict[str, str | int | float | None],
-) -> dict[str, str | int | float | None]:
+    values: VesselInputFormRawDict,
+) -> VesselInputFormRawDict:
     """Return a copy of form values with comma formatting applied where configured."""
     return {key: format_form_field_value(key, value) for key, value in values.items()}
 
 
-def form_field_input_type(field_name: str) -> str:
+def form_field_input_type(field_name: VesselInputField | str) -> str:
     """Return Dash ``dcc.Input`` type for a form field."""
-    if field_name in ('vessel_name', 'purchase_date', 'engine_type'):
+    if field_name in (
+        VesselInputField.VESSEL_NAME,
+        VesselInputField.PURCHASE_DATE,
+        VesselInputField.ENGINE_TYPE,
+    ):
         return 'text'
     if field_name in COMMA_FORMATTED_FIELDS:
         return 'text'

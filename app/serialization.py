@@ -6,6 +6,8 @@ from app.form_formatting import (
     parse_display_number,
 )
 from vessel_valuation.mapping import (
+    FormRawValue,
+    VesselInputFormRawDict,
     vessel_inputs_from_dict,
     vessel_inputs_to_dict,
     vessel_inputs_to_form_raw_dict,
@@ -26,7 +28,7 @@ from vessel_valuation.serialize import (
 )
 
 
-def form_values_to_raw(form: dict[str, str | int | float | None]) -> dict[str, object]:
+def form_values_to_raw(form: dict[str, FormRawValue]) -> dict[str, object]:
     """Map Dash form state to a raw payload for ``validate()``."""
     raw: dict[str, object] = {}
     for key, value in form.items():
@@ -41,7 +43,7 @@ def form_values_to_raw(form: dict[str, str | int | float | None]) -> dict[str, o
     return raw
 
 
-def vessel_inputs_to_form_values(inputs: VesselInputs) -> dict[str, str | int | float | None]:
+def vessel_inputs_to_form_values(inputs: VesselInputs) -> VesselInputFormRawDict:
     """Map ``VesselInputs`` to Dash form component values (comma-formatted where configured)."""
     return format_form_values_for_display(vessel_inputs_to_form_raw_dict(inputs))
 

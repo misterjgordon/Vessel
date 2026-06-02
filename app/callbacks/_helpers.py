@@ -13,6 +13,7 @@ from app.serialization import (
     vessel_inputs_to_form_values,
     vessel_inputs_to_store,
 )
+from vessel_valuation.mapping import VesselInputField
 from vessel_valuation.serialize import json_float
 from app.views.investment import (
     FORM_COMPONENT_IDS,
@@ -90,7 +91,7 @@ def calculation_schedules(
 def form_values_tuple(inputs: VesselInputs) -> tuple[str | int | float | None, ...]:
     """Form field values in ``FORM_FIELD_NAMES`` order for Dash ``Output`` wiring."""
     form_values = vessel_inputs_to_form_values(inputs)
-    return tuple(form_values[name] for name in FORM_FIELD_NAMES)
+    return tuple(form_values[VesselInputField(name)] for name in FORM_FIELD_NAMES)
 
 
 def build_compute_store(

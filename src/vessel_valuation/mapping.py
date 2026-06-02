@@ -23,14 +23,42 @@ the store/form boundary and become ``None`` on the dataclass.
 
 import dataclasses
 from datetime import date
+from enum import StrEnum
 from typing import cast
 
 from vessel_valuation.schema import VesselInputs
 
 _VESSEL_INPUT_FIELDS = dataclasses.fields(VesselInputs)
 
+
+class VesselInputField(StrEnum):
+    """``VesselInputs`` attribute names for typed cross-boundary mapping."""
+
+    VESSEL_NAME = 'vessel_name'
+    PURCHASE_PRICE = 'purchase_price'
+    VESSEL_LIFE = 'vessel_life'
+    RESIDUAL_VALUE = 'residual_value'
+    LW_TONNAGE = 'lw_tonnage'
+    REVENUE_PER_DAY = 'revenue_per_day'
+    OFFHIRE_RATE = 'offhire_rate'
+    OPEX_PER_DAY = 'opex_per_day'
+    DRYDOCK_CAPEX = 'drydock_capex'
+    DRYDOCK_FREQUENCY = 'drydock_frequency'
+    UPGRADES_CAPEX = 'upgrades_capex'
+    INFLATION_RATE = 'inflation_rate'
+    DISCOUNT_RATE = 'discount_rate'
+    DAYS_OF_YEAR = 'days_of_year'
+    TEU_SIZE = 'teu_size'
+    PURCHASE_DATE = 'purchase_date'
+    ENGINE_TYPE = 'engine_type'
+    CO2_CARBON_FACTOR = 'co2_carbon_factor'
+
+
 # Stable field-name tuple — use for upload headers, column checks, and parity tests.
 VESSEL_INPUT_FIELD_NAMES: tuple[str, ...] = tuple(f.name for f in _VESSEL_INPUT_FIELDS)
+
+FormRawValue = str | int | float | None
+VesselInputFormRawDict = dict[VesselInputField, FormRawValue]
 
 # ``VesselInputRow`` columns that are persistence metadata, not part of the dataclass.
 VESSEL_INPUT_ROW_META_COLUMNS: frozenset[str] = frozenset(
@@ -157,7 +185,7 @@ def vessel_inputs_to_dict(inputs: VesselInputs) -> dict[str, object]:
 
 def vessel_inputs_to_form_raw_dict(
     inputs: VesselInputs,
-) -> dict[str, str | int | float | None]:
+) -> VesselInputFormRawDict:
     """Map ``VesselInputs`` to form-friendly values before comma formatting.
 
     Dash text inputs expect strings for empty optionals and an ISO date string
@@ -171,21 +199,22 @@ def vessel_inputs_to_form_raw_dict(
 
     Returns
     -------
-    dict[str, str | int | float | None]
+    VesselInputFormRawDict
         One entry per field; ``engine_type`` and ``co2_carbon_factor`` use ``''``
         when unset.
     """
-    values: dict[str, str | int | float | None] = {}
+    values: VesselInputFormRawDict = {}
     for field in _VESSEL_INPUT_FIELDS:
+        field_key = VesselInputField(field.name)
         value = getattr(inputs, field.name)
-        if field.name == 'purchase_date':
-            values[field.name] = value.isoformat()
-        elif field.name == 'engine_type':
-            values[field.name] = value or ''
-        elif field.name == 'co2_carbon_factor':
-            values[field.name] = value if value is not None else ''
+        if field_key is VesselInputField.PURCHASE_DATE:
+            values[field_key] = value.isoformat()
+        elif field_key is VesselInputField.ENGINE_TYPE:
+            values[field_key] = value or ''
+        elif field_key is VesselInputField.CO2_CARBON_FACTOR:
+            values[field_key] = value if value is not None else ''
         else:
-            values[field.name] = value
+            values[field_key] = value
     return values
 
 
@@ -274,9 +303,9 @@ def vessel_inputs_from_dict(data: dict[str, object]) -> VesselInputs:
             kwargs[name] = _require_int(data, name)
         elif field.type is str:
             kwargs[name] = str(data[name])
-        elif name == 'engine_type':
+        elif name == VesselInputField.ENGINE_TYPE:
             kwargs[name] = _optional_str(data.get(name))
-        elif name == 'co2_carbon_factor':
+        elif name == VesselInputField.CO2_CARBON_FACTOR:
             kwargs[name] = _optional_float(data.get(name))
         else:
             raise TypeError(f'unhandled VesselInputs field {name!r}')
