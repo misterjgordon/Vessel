@@ -17,7 +17,12 @@ from app.serialization import (
     vessel_inputs_to_form_values,
     vessel_inputs_to_store,
 )
-from app.views.calculation import schedule_to_rows
+from app.views.calculation import (
+    build_cashflow_chart_figure,
+    empty_cashflow_figure,
+    empty_dcf_columns,
+    schedule_to_dcf_table,
+)
 from app.views.compare import (
     build_compare_figure,
     build_compare_rows,
@@ -885,20 +890,27 @@ def register_callbacks(app: Dash, session_factory: sessionmaker[Session]) -> Non
         )
 
     @app.callback(
+        Output(cid.TABLE_CASHFLOW, 'columns'),
         Output(cid.TABLE_CASHFLOW, 'data'),
+        Output(cid.CHART_CASHFLOW, 'figure'),
         Output(cid.CALCULATION_PLACEHOLDER, 'children'),
         Input(cid.SELECT_SCENARIO, 'value'),
         Input(cid.STORE_COMPUTE, 'data'),
         Input(cid.SELECT_CALCULATION_VESSEL, 'value'),
     )
-    def render_cashflow_table(
+    def render_cashflow_detail(
         scenario: str | None,
         store: dict[str, object] | None,
         calculation_vessel_id: int | None,
-    ) -> tuple[list[dict[str, str | int]], str]:
-        """Render cashflow rows from the session store or a selected database entry."""
+    ) -> tuple[list[dict[str, str]], list[dict[str, str]], dict[str, object], str]:
+        """Render DCF pivot table and trend chart from session store or database entry."""
         if scenario is None:
-            return [], 'Select a scenario to view the schedule.'
+            return (
+                empty_dcf_columns(),
+                [],
+                empty_cashflow_figure(),
+                'Select a scenario to view the schedule.',
+            )
 
         schedules, placeholder = _calculation_schedules(
             session_factory,
@@ -906,10 +918,12 @@ def register_callbacks(app: Dash, session_factory: sessionmaker[Session]) -> Non
             calculation_vessel_id,
         )
         if schedules is None:
-            return [], placeholder
+            return empty_dcf_columns(), [], empty_cashflow_figure(), placeholder
 
         schedule = schedules.get(scenario, [])
-        return schedule_to_rows(schedule), placeholder
+        columns, rows = schedule_to_dcf_table(schedule)
+        figure = build_cashflow_chart_figure(schedule)
+        return columns, rows, figure, placeholder
 
 
 def _calculation_schedules(

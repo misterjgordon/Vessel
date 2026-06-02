@@ -1,9 +1,13 @@
 """Type coercion helpers — convert raw dict values to typed ``VesselInputs`` fields."""
 
+import dataclasses
 from datetime import date, datetime
 
+from vessel_valuation.mapping import vessel_inputs_from_coerced_kwargs
 from vessel_valuation.schema import VesselInputs
 from vessel_valuation.validation.types import SENTINELS
+
+_VESSEL_INPUT_FIELDS = dataclasses.fields(VesselInputs)
 
 
 def is_sentinel(v: object) -> bool:
@@ -62,27 +66,24 @@ def coerce_inputs(raw: dict[str, object]) -> VesselInputs:
         assert v is not None, f'{key} should be valid after structural validation'
         return v
 
-    pd = to_date(raw, 'purchase_date')
-    assert pd is not None, 'purchase_date should be valid after structural validation'
+    kwargs: dict[str, object] = {}
+    for field in _VESSEL_INPUT_FIELDS:
+        name = field.name
+        if name == 'vessel_name':
+            kwargs[name] = str(raw.get(name, '')).strip()
+        elif name == 'purchase_date':
+            pd = to_date(raw, name)
+            assert pd is not None, 'purchase_date should be valid after structural validation'
+            kwargs[name] = pd
+        elif name == 'engine_type':
+            kwargs[name] = str(raw[name]) if raw.get(name) else None
+        elif name == 'co2_carbon_factor':
+            kwargs[name] = to_float(raw, name)
+        elif field.type is float:
+            kwargs[name] = req_float(name)
+        elif field.type is int:
+            kwargs[name] = req_int(name)
+        else:
+            raise AssertionError(f'unhandled VesselInputs field {name!r}')
 
-    return VesselInputs(
-        vessel_name=str(raw.get('vessel_name', '')).strip(),
-        purchase_price=req_float('purchase_price'),
-        vessel_life=req_int('vessel_life'),
-        residual_value=req_float('residual_value'),
-        lw_tonnage=req_float('lw_tonnage'),
-        revenue_per_day=req_float('revenue_per_day'),
-        offhire_rate=req_float('offhire_rate'),
-        opex_per_day=req_float('opex_per_day'),
-        drydock_capex=req_float('drydock_capex'),
-        drydock_frequency=req_int('drydock_frequency'),
-        upgrades_capex=req_float('upgrades_capex'),
-        inflation_rate=req_float('inflation_rate'),
-        discount_rate=req_float('discount_rate'),
-        days_of_year=req_int('days_of_year'),
-        teu_size=req_int('teu_size'),
-        purchase_date=pd,
-        engine_type=str(raw['engine_type']) if raw.get(
-            'engine_type') else None,
-        co2_carbon_factor=to_float(raw, 'co2_carbon_factor'),
-    )
+    return vessel_inputs_from_coerced_kwargs(kwargs)

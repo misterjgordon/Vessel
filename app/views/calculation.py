@@ -1,14 +1,15 @@
 """View 2 — year-by-year cashflow table (presentation / pivot only)."""
 
+from datetime import date
+
+import plotly.graph_objects as go
 from dash import dash_table, dcc, html
 
 from app import component_ids as cid
 from vessel_valuation.decision_insights.scenario_schedules import INPUTS_SCENARIO_NAME
 from vessel_valuation.schema import CashflowYear
 
-_TABLE_COLUMNS: tuple[tuple[str, str], ...] = (
-    ('year', 'Year'),
-    ('period_end', 'Period end'),
+_LINE_ITEMS: tuple[tuple[str, str], ...] = (
     ('revenue', 'Revenue'),
     ('opex', 'OpEx'),
     ('drydock_capex', 'Drydock CapEx'),
@@ -19,18 +20,12 @@ _TABLE_COLUMNS: tuple[tuple[str, str], ...] = (
     ('cumulative_cashflow', 'Cumulative CF'),
 )
 
-_MONEY_FIELDS = frozenset(
-    {
-        'revenue',
-        'opex',
-        'drydock_capex',
-        'upgrades_capex',
-        'free_cashflow',
-        'net_cashflow',
-        'discounted_cashflow',
-        'cumulative_cashflow',
-    }
-)
+_MONEY_FIELDS = frozenset(field for field, _label in _LINE_ITEMS)
+
+_EMPTY_CASHFLOW_FIGURE: dict[str, object] = {
+    'data': [],
+    'layout': {'title': 'Run Calculate or select a saved entry'},
+}
 
 
 def calculation_view() -> html.Div:
@@ -77,36 +72,83 @@ def calculation_view() -> html.Div:
             html.Div(id=cid.CALCULATION_PLACEHOLDER, className='placeholder'),
             dash_table.DataTable(
                 id=cid.TABLE_CASHFLOW,
-                columns=datatable_columns(),  # pyright: ignore[reportArgumentType]
+                columns=empty_dcf_columns(),  # pyright: ignore[reportArgumentType]
                 data=[],
                 page_size=30,
                 style_table={'overflowX': 'auto'},
                 style_cell={'textAlign': 'right', 'padding': '6px'},
                 style_header={'fontWeight': 'bold'},
             ),
+            dcc.Graph(
+                id=cid.CHART_CASHFLOW,
+                figure=empty_cashflow_figure(),
+            ),
         ],
         className='view-calculation',
     )
 
 
-def datatable_columns() -> list[dict[str, str]]:
-    """Return DataTable column definitions."""
-    return [{'name': label, 'id': field} for field, label in _TABLE_COLUMNS]
+def empty_dcf_columns() -> list[dict[str, str]]:
+    """Column definitions when no schedule is loaded."""
+    return [{'name': 'Line item', 'id': 'line_item'}]
 
 
-def schedule_to_rows(schedule: list[CashflowYear]) -> list[dict[str, str | int]]:
-    """Pivot a schedule into DataTable rows (years on the Y-axis)."""
-    rows: list[dict[str, str | int]] = []
+def empty_cashflow_figure() -> dict[str, object]:
+    """Return a placeholder chart before a schedule is available."""
+    return _EMPTY_CASHFLOW_FIGURE
+
+
+def schedule_to_dcf_table(
+    schedule: list[CashflowYear],
+) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+    """Pivot schedule into DCF layout: line items as rows, period ends as columns."""
+    if not schedule:
+        return empty_dcf_columns(), []
+
+    columns: list[dict[str, str]] = [{'name': 'Line item', 'id': 'line_item'}]
     for row in schedule:
-        record: dict[str, str | int] = {'year': row.year}
-        record['period_end'] = row.period_end.isoformat()
-        for field, _label in _TABLE_COLUMNS:
-            if field in ('year', 'period_end'):
-                continue
+        period_id = row.period_end.isoformat()
+        columns.append({'name': _format_period_header(row.period_end), 'id': period_id})
+
+    rows: list[dict[str, str]] = []
+    for field, label in _LINE_ITEMS:
+        record: dict[str, str] = {'line_item': label}
+        for row in schedule:
+            period_id = row.period_end.isoformat()
             value = getattr(row, field)
-            record[field] = _format_cell(field, value)
+            record[period_id] = _format_cell(field, value)
         rows.append(record)
-    return rows
+    return columns, rows
+
+
+def build_cashflow_chart_figure(schedule: list[CashflowYear]) -> dict[str, object]:
+    """Line chart of each cashflow line item vs period end."""
+    if not schedule:
+        return empty_cashflow_figure()
+
+    period_ends = [row.period_end for row in schedule]
+    traces = [
+        go.Scatter(
+            x=period_ends,
+            y=[getattr(row, field) for row in schedule],
+            mode='lines+markers',
+            name=label,
+        )
+        for field, label in _LINE_ITEMS
+    ]
+    fig = go.Figure(data=traces)
+    fig.update_layout(
+        title='Cash flows by period end',
+        xaxis_title='Period end',
+        yaxis_title='Amount ($)',
+        template='plotly_white',
+        legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
+    )
+    return fig.to_dict()
+
+
+def _format_period_header(period_end: date) -> str:
+    return period_end.strftime('%d %b %Y')
 
 
 def _format_cell(field: str, value: float) -> str:

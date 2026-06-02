@@ -30,7 +30,6 @@ Public API
     parse_upload(data, filename)     → ParseResult   (thin file-load wrapper)
 """
 
-import dataclasses
 import io
 from dataclasses import dataclass
 from datetime import date, datetime
@@ -40,6 +39,7 @@ import numpy as np
 import pandas as pd
 
 from vessel_valuation.excel_reference import SAMPLE_DATA_SHEET, UPLOAD_HEADER_ALIASES
+from vessel_valuation.mapping import VESSEL_INPUT_FIELD_NAMES
 from vessel_valuation.schema import ValidationThresholds, VesselInputs
 from vessel_valuation.validation import (
     median_pp_teu_factor,
@@ -48,7 +48,7 @@ from vessel_valuation.validation import (
     vessel_inputs_identity,
 )
 
-REQUIRED_COLUMNS: frozenset[str] = frozenset(f.name for f in dataclasses.fields(VesselInputs))
+REQUIRED_COLUMNS: frozenset[str] = frozenset(VESSEL_INPUT_FIELD_NAMES)
 
 # Filename suffix selects CSV vs Excel reader in ``_load_dataframe``.
 ACCEPTED_UPLOAD_EXTENSIONS: frozenset[str] = frozenset({'.csv', '.xlsx', '.xlsm', '.xls'})

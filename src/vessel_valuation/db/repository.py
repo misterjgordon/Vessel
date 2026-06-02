@@ -19,6 +19,7 @@ from vessel_valuation.db.models import (
     VesselValuationRow,
 )
 from vessel_valuation.decision_insights.enrich import enrich
+from vessel_valuation.mapping import vessel_inputs_from_object, vessel_inputs_kwargs
 from vessel_valuation.schema import (
     CashflowYear,
     ScenarioResult,
@@ -132,24 +133,7 @@ def save_vessel_inputs(session: Session, submission_id: int, inputs: VesselInput
     row = VesselInputRow(
         submission_id=submission_id,
         created_at=datetime.now(UTC),
-        vessel_name=inputs.vessel_name,
-        purchase_price=inputs.purchase_price,
-        vessel_life=inputs.vessel_life,
-        residual_value=inputs.residual_value,
-        lw_tonnage=inputs.lw_tonnage,
-        revenue_per_day=inputs.revenue_per_day,
-        offhire_rate=inputs.offhire_rate,
-        opex_per_day=inputs.opex_per_day,
-        drydock_capex=inputs.drydock_capex,
-        drydock_frequency=inputs.drydock_frequency,
-        upgrades_capex=inputs.upgrades_capex,
-        inflation_rate=inputs.inflation_rate,
-        discount_rate=inputs.discount_rate,
-        days_of_year=inputs.days_of_year,
-        teu_size=inputs.teu_size,
-        purchase_date=inputs.purchase_date,
-        engine_type=inputs.engine_type,
-        co2_carbon_factor=inputs.co2_carbon_factor,
+        **vessel_inputs_kwargs(inputs),  # type: ignore[arg-type]
     )
     session.add(row)
     session.flush()
@@ -520,26 +504,7 @@ def _scenarios_from_json(
 
 
 def _row_to_vessel_inputs(row: VesselInputRow) -> VesselInputs:
-    return VesselInputs(
-        vessel_name=row.vessel_name,
-        purchase_price=row.purchase_price,
-        vessel_life=row.vessel_life,
-        residual_value=row.residual_value,
-        lw_tonnage=row.lw_tonnage,
-        revenue_per_day=row.revenue_per_day,
-        offhire_rate=row.offhire_rate,
-        opex_per_day=row.opex_per_day,
-        drydock_capex=row.drydock_capex,
-        drydock_frequency=row.drydock_frequency,
-        upgrades_capex=row.upgrades_capex,
-        inflation_rate=row.inflation_rate,
-        discount_rate=row.discount_rate,
-        days_of_year=row.days_of_year,
-        teu_size=row.teu_size,
-        purchase_date=row.purchase_date,
-        engine_type=row.engine_type,
-        co2_carbon_factor=row.co2_carbon_factor,
-    )
+    return vessel_inputs_from_object(row)
 
 
 def _valuation_row_to_result(valuation: VesselValuationRow) -> ValuationResult:

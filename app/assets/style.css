@@ -5,6 +5,13 @@
   padding: 1rem 1.5rem 2rem;
 }
 
+.app-root .dash-table-container,
+.app-root .dash-table-container .dash-spreadsheet-container,
+.app-root .dash-table-container .dash-spreadsheet-container table,
+.app-root .dash-table-container .column-header-name {
+  font-family: inherit;
+}
+
 .app-header {
   margin-bottom: 1rem;
 }
@@ -15,8 +22,12 @@
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 0.75rem 1rem;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.5rem 0.75rem;
+}
+
+.form-field {
+  min-width: 0;
 }
 
 .form-field label {
@@ -296,6 +307,10 @@
   max-width: 420px;
 }
 
+.view-calculation .dash-table-container td:first-child {
+  text-align: left;
+}
+
 .upload-selection-label {
   margin: 0.5rem 0 1rem;
   font-weight: 500;
@@ -314,21 +329,27 @@
 }
 
 .sensitivity-range {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin: 0.75rem 0;
+  display: grid;
+  grid-template-columns: auto 7rem auto 7rem;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0.35rem 0 0.75rem;
+  width: fit-content;
+  max-width: 100%;
 }
 
-.sensitivity-field label {
-  display: block;
+.sensitivity-range label {
   font-size: 0.85rem;
-  margin-bottom: 0.25rem;
+  white-space: nowrap;
 }
 
-.sensitivity-field input {
-  width: 10rem;
+.sensitivity-range input {
+  width: 100%;
+  min-width: 0;
   box-sizing: border-box;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }
 
 .compare-select {

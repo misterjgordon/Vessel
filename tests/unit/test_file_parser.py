@@ -54,12 +54,9 @@ def _xlsx_bytes(rows: list[dict[str, object]]) -> bytes:
 
 def test_required_columns_match_vessel_inputs_fields() -> None:
     """REQUIRED_COLUMNS matches every VesselInputs field name."""
-    import dataclasses
+    from vessel_valuation.mapping import VESSEL_INPUT_FIELD_NAMES
 
-    from vessel_valuation.schema import VesselInputs
-
-    all_fields = frozenset(f.name for f in dataclasses.fields(VesselInputs))
-    assert REQUIRED_COLUMNS == all_fields
+    assert REQUIRED_COLUMNS == frozenset(VESSEL_INPUT_FIELD_NAMES)
 
 
 def test_required_headers_accepted() -> None:

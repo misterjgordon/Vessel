@@ -342,29 +342,33 @@ def investment_view() -> html.Div:
                 columns=scenario_table_columns(),  # pyright: ignore[reportArgumentType]
                 data=scenario_table_rows(),
                 style_table={'overflowX': 'auto'},
-                style_cell={'textAlign': 'right', 'padding': '6px'},
+                style_cell={
+                    'textAlign': 'right',
+                    'padding': '6px',
+                    'fontFamily': 'system-ui, sans-serif',
+                },
                 style_cell_conditional=[
                     {'if': {'column_id': 'scenario'}, 'textAlign': 'left'},
                 ],
-                style_header={'fontWeight': 'bold'},
+                style_header={'fontWeight': 'bold', 'fontFamily': 'system-ui, sans-serif'},
             ),
             html.Hr(),
             html.H3('Sensitivity — IRR vs revenue per day'),
             html.Div(
                 [
-                    html.Div(
-                        [
-                            html.Label('Revenue min ($/day)'),
-                            dcc.Input(id=cid.INPUT_REV_MIN, type='number', placeholder='auto'),
-                        ],
-                        className='sensitivity-field',
+                    html.Label('Revenue min ($/day)', htmlFor=cid.INPUT_REV_MIN),
+                    dcc.Input(
+                        id=cid.INPUT_REV_MIN,
+                        type='number',
+                        placeholder='auto',
+                        step='any',
                     ),
-                    html.Div(
-                        [
-                            html.Label('Revenue max ($/day)'),
-                            dcc.Input(id=cid.INPUT_REV_MAX, type='number', placeholder='auto'),
-                        ],
-                        className='sensitivity-field',
+                    html.Label('Revenue max ($/day)', htmlFor=cid.INPUT_REV_MAX),
+                    dcc.Input(
+                        id=cid.INPUT_REV_MAX,
+                        type='number',
+                        placeholder='auto',
+                        step='any',
                     ),
                 ],
                 className='sensitivity-range',
@@ -419,7 +423,7 @@ def dash_table_placeholder():
         style_table={'overflowX': 'auto'},
         style_cell={'textAlign': 'left', 'padding': '6px'},
         style_header={'fontWeight': 'bold'},
-        style_data_conditional=[
+        style_data_conditional=[  # pyright: ignore[reportArgumentType]
             {
                 'if': {'state': 'selected'},
                 'backgroundColor': '#dbeafe',

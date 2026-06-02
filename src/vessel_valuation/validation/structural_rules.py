@@ -71,8 +71,7 @@ STRUCTURAL_RULES = [
     ),
     _non_negative_float_rule('V-010', 'upgrades_capex', 'Upgrades CapEx'),
     _rate_rule('V-011', 'inflation_rate', 'Inflation rate'),
-    _rate_rule('V-012', 'discount_rate',
-               'Discount rate', strictly_positive=True),
+    _rate_rule('V-012', 'discount_rate', 'Discount rate', strictly_positive=True),
     RawRule(
         'V-013',
         'Days of year must equal 365 — no other value is supported',

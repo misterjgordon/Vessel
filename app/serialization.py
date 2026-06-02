@@ -1,12 +1,16 @@
 """Serialize domain objects for ``dcc.Store`` (JSON-safe dicts)."""
 
-import dataclasses
 from datetime import date
 
 from app.form_formatting import (
     COMMA_FORMATTED_FIELDS,
     format_form_values_for_display,
     parse_display_number,
+)
+from vessel_valuation.mapping import (
+    vessel_inputs_from_dict,
+    vessel_inputs_to_dict,
+    vessel_inputs_to_form_raw_dict,
 )
 from vessel_valuation.schema import (
     CashflowYear,
@@ -56,65 +60,17 @@ def form_values_to_raw(form: dict[str, str | int | float | None]) -> dict[str, o
 
 def vessel_inputs_to_form_values(inputs: VesselInputs) -> dict[str, str | int | float | None]:
     """Map ``VesselInputs`` to Dash form component values (comma-formatted where configured)."""
-    values: dict[str, str | int | float | None] = {
-        'vessel_name': inputs.vessel_name,
-        'purchase_price': inputs.purchase_price,
-        'vessel_life': inputs.vessel_life,
-        'residual_value': inputs.residual_value,
-        'lw_tonnage': inputs.lw_tonnage,
-        'revenue_per_day': inputs.revenue_per_day,
-        'offhire_rate': inputs.offhire_rate,
-        'opex_per_day': inputs.opex_per_day,
-        'drydock_capex': inputs.drydock_capex,
-        'drydock_frequency': inputs.drydock_frequency,
-        'upgrades_capex': inputs.upgrades_capex,
-        'inflation_rate': inputs.inflation_rate,
-        'discount_rate': inputs.discount_rate,
-        'days_of_year': inputs.days_of_year,
-        'teu_size': inputs.teu_size,
-        'purchase_date': inputs.purchase_date.isoformat(),
-        'engine_type': inputs.engine_type or '',
-        'co2_carbon_factor': (
-            inputs.co2_carbon_factor if inputs.co2_carbon_factor is not None else ''
-        ),
-    }
-    return format_form_values_for_display(values)
+    return format_form_values_for_display(vessel_inputs_to_form_raw_dict(inputs))
 
 
 def vessel_inputs_to_store(inputs: VesselInputs) -> dict[str, object]:
     """Serialize ``VesselInputs`` for ``dcc.Store``."""
-    data = dataclasses.asdict(inputs)
-    data['purchase_date'] = inputs.purchase_date.isoformat()
-    return data
+    return vessel_inputs_to_dict(inputs)
 
 
 def vessel_inputs_from_store(data: dict[str, object]) -> VesselInputs:
     """Deserialize ``VesselInputs`` from ``dcc.Store``."""
-    purchase_raw = data['purchase_date']
-    if isinstance(purchase_raw, str):
-        purchase_date = date.fromisoformat(purchase_raw)
-    else:
-        raise TypeError('purchase_date must be an ISO date string')
-    return VesselInputs(
-        vessel_name=str(data['vessel_name']),
-        purchase_price=_float_field(data, 'purchase_price'),
-        vessel_life=_int_field(data, 'vessel_life'),
-        residual_value=_float_field(data, 'residual_value'),
-        lw_tonnage=_float_field(data, 'lw_tonnage'),
-        revenue_per_day=_float_field(data, 'revenue_per_day'),
-        offhire_rate=_float_field(data, 'offhire_rate'),
-        opex_per_day=_float_field(data, 'opex_per_day'),
-        drydock_capex=_float_field(data, 'drydock_capex'),
-        drydock_frequency=_int_field(data, 'drydock_frequency'),
-        upgrades_capex=_float_field(data, 'upgrades_capex'),
-        inflation_rate=_float_field(data, 'inflation_rate'),
-        discount_rate=_float_field(data, 'discount_rate'),
-        days_of_year=_int_field(data, 'days_of_year'),
-        teu_size=_int_field(data, 'teu_size'),
-        purchase_date=purchase_date,
-        engine_type=_optional_str(data.get('engine_type')),
-        co2_carbon_factor=_optional_float(data.get('co2_carbon_factor')),
-    )
+    return vessel_inputs_from_dict(data)
 
 
 def valuation_to_store(result: ValuationResult) -> dict[str, object]:
@@ -214,19 +170,3 @@ def sensitivity_from_store(
             )
         )
     return result
-
-
-def _optional_str(value: object) -> str | None:
-    if value is None or value == '':
-        return None
-    return str(value)
-
-
-def _optional_float(value: object) -> float | None:
-    if value is None or value == '':
-        return None
-    if isinstance(value, (int, float)):
-        return float(value)
-    if isinstance(value, str):
-        return float(value)
-    return None
