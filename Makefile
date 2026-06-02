@@ -1,4 +1,4 @@
-.PHONY: sync test test-integration lint format run dev docker-up docker-down docker-logs help
+.PHONY: sync test test-integration test-all lint format run dev docker-up docker-down docker-logs help
 
 sync:
 	uv sync --extra dev
@@ -8,6 +8,8 @@ test:
 
 test-integration:
 	uv run --extra dev pytest tests/integration -v
+
+test-all: test test-integration
 
 lint:
 	uv run ruff check src tests app
@@ -40,6 +42,7 @@ help:
 	@echo "make sync              - install dependencies (uv sync --extra dev)"
 	@echo "make test              - run unit tests"
 	@echo "make test-integration  - run repository / DB integration tests"
+	@echo "make test-all          - run unit + integration tests"
 	@echo "make lint              - ruff check + format check"
 	@echo "make format            - ruff format src, tests, and app"
 	@echo "make dev               - local Dash + SQLite (http://localhost:8050, hot reload)"

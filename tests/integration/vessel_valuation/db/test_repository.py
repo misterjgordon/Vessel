@@ -1,7 +1,7 @@
 """
 Repository integration tests — SQLite in-memory round-trips.
 
-uv run --extra dev pytest tests/integration/test_repository.py -v
+uv run --extra dev pytest tests/integration/vessel_valuation/db/test_repository.py -v
 """
 
 from datetime import date

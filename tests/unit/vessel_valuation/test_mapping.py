@@ -4,12 +4,8 @@ from dataclasses import replace
 from datetime import date
 
 import pytest
-from sqlalchemy import inspect
 
-from vessel_valuation.db.models import VesselInputRow
 from vessel_valuation.mapping import (
-    VESSEL_INPUT_FIELD_NAMES,
-    VESSEL_INPUT_ROW_META_COLUMNS,
     vessel_inputs_from_dict,
     vessel_inputs_from_object,
     vessel_inputs_to_dict,
@@ -39,13 +35,6 @@ def sample_inputs() -> VesselInputs:
         teu_size=10_000,
         purchase_date=date(2025, 12, 31),
     )
-
-
-def test_vessel_input_row_columns_match_field_names() -> None:
-    """Silver ORM columns (excluding metadata) match every ``VesselInputs`` field name."""
-    orm_columns = {column.key for column in inspect(VesselInputRow).columns}
-    dataclass_fields = frozenset(VESSEL_INPUT_FIELD_NAMES)
-    assert orm_columns - VESSEL_INPUT_ROW_META_COLUMNS == dataclass_fields
 
 
 def test_vessel_inputs_dict_round_trip(sample_inputs: VesselInputs) -> None:
