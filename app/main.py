@@ -31,10 +31,23 @@ def create_app() -> Dash:
     return dash_app
 
 
+def _print_browser_hint(port: int) -> None:
+    """Tell users how to open the app when the terminal link is not clickable."""
+    local_url = f'http://localhost:{port}'
+    print()
+    print(f'Open {local_url} in your browser.')
+    print(
+        'If the link below is not clickable in your terminal, '
+        f'copy and paste {local_url} into the address bar.'
+    )
+    print()
+
+
 def main() -> None:
     """Run the development server."""
     port = int(os.environ.get('PORT', '8050'))
     debug = os.environ.get('DASH_DEBUG', '1') == '1'
+    _print_browser_hint(port)
     create_app().run(debug=debug, host='0.0.0.0', port=port)
 
 

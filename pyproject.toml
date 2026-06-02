@@ -147,6 +147,8 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 # Test module docstrings: run command + description (numpy D400/D205 not applied).
 'tests/**/*.py' = ['D400', 'D205', 'ANN001']
+# Dev server entry point: user-facing startup hints on stdout.
+'app/main.py' = ['T20']
 
 [tool.ruff.lint.flake8-type-checking]
 quote-annotations = true

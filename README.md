@@ -1,6 +1,6 @@
 # Vessel
 
-DCF valuation for vessel.....
+Discounted cash flow (DCF) valuation for container vessels. Enter inputs in the browser or upload CSV/Excel, run NPV and IRR against a case-study-aligned engine, review decision insights (breakeven charter rate, IRR sensitivity, macro scenarios), save runs to SQLite, and compare any two saved vessels side by side.
 
 ## Quick start
 
