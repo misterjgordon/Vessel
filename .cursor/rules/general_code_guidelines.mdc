@@ -125,6 +125,21 @@ When multiple approaches are valid:
 - Every `test_*` function must have a one-line docstring describing the behaviour under test.
 - The docstring states the expected outcome, not just what the test does (e.g. "Positive-NPV vessel breakeven lies below current revenue per day", not "Test breakeven revenue").
 
+### Test module docstrings (run command)
+
+When a test file documents how to run it, use a **module docstring as the first statement**—never a `# Run:` comment above the docstring.
+
+```python
+"""
+One-line description of what this test module covers.
+uv run --extra dev pytest tests/unit/vessel_valuation/test_example.py -v
+"""
+```
+
+- Opening `"""` on its own line; summary on the next line; full `uv run --extra dev pytest …` command on the following line; closing `"""` on its own line.
+- No `Run:` prefix on the command line.
+- Longer descriptions may add paragraphs between the summary and the command; the `uv run` line is always the last line before the closing `"""`.
+
 ## Violations
 
 If a change violates these principles, don't implement it. Explain conflict and propose alternative.

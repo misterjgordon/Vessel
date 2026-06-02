@@ -1,5 +1,7 @@
-# Run: uv run --extra dev pytest tests/unit/decision_insights/test_enrich.py -v
-"""Enrichment entry-point tests."""
+"""
+Enrichment entry-point tests.
+uv run --extra dev pytest tests/unit/vessel_valuation/decision_insights/test_enrich.py -v
+"""
 
 import pytest
 

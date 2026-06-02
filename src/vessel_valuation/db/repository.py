@@ -22,10 +22,14 @@ from vessel_valuation.decision_insights.enrich import enrich
 from vessel_valuation.mapping import vessel_inputs_from_object, vessel_inputs_kwargs
 from vessel_valuation.schema import (
     CashflowYear,
-    ScenarioResult,
-    SensitivityPoint,
     ValuationResult,
     VesselInputs,
+)
+from vessel_valuation.serialize import (
+    sensitivity_points_from_json,
+    sensitivity_points_to_json,
+    scenarios_from_json,
+    scenarios_to_json,
 )
 from vessel_valuation.validation import (
     SENTINELS,
@@ -142,17 +146,6 @@ def save_vessel_inputs(session: Session, submission_id: int, inputs: VesselInput
 
 def save_valuation(session: Session, vessel_input_id: int, result: ValuationResult) -> int:
     """Persist gold valuation summary and cashflow rows; return valuation id."""
-    sensitivity_json = [
-        {'revenue_per_day': p.revenue_per_day, 'irr': p.irr} for p in result.sensitivity
-    ]
-    scenarios_json = {
-        name: {
-            'npv': s.npv,
-            'irr': s.irr,
-            'investment_signal': s.investment_signal,
-        }
-        for name, s in result.scenarios.items()
-    }
     row = VesselValuationRow(
         vessel_input_id=vessel_input_id,
         computed_at=datetime.now(UTC),
@@ -161,8 +154,8 @@ def save_valuation(session: Session, vessel_input_id: int, result: ValuationResu
         payback_year=result.payback_year,
         investment_signal=result.investment_signal,
         breakeven_rate=result.breakeven_rate,
-        sensitivity=sensitivity_json,
-        scenarios=scenarios_json,
+        sensitivity=sensitivity_points_to_json(result.sensitivity),
+        scenarios=scenarios_to_json(result.scenarios),
     )
     session.add(row)
     session.flush()
@@ -462,47 +455,6 @@ def create_test_session_factory() -> sessionmaker[Session]:
     return create_session_factory(engine)
 
 
-def _json_float(value: object) -> float:
-    if isinstance(value, (int, float)):
-        return float(value)
-    if isinstance(value, str):
-        return float(value)
-    raise TypeError('expected numeric JSON value')
-
-
-def _sensitivity_from_json(
-    payload: list[dict[str, object]] | None,
-) -> list[SensitivityPoint]:
-    if not payload:
-        return []
-    points: list[SensitivityPoint] = []
-    for point in payload:
-        irr_raw = point.get('irr')
-        irr = _json_float(irr_raw) if irr_raw is not None else None
-        points.append(
-            SensitivityPoint(
-                revenue_per_day=_json_float(point['revenue_per_day']),
-                irr=irr,
-            )
-        )
-    return points
-
-
-def _scenarios_from_json(
-    payload: dict[str, dict[str, object]] | None,
-) -> dict[str, ScenarioResult]:
-    if not payload:
-        return {}
-    return {
-        name: ScenarioResult(
-            npv=_json_float(data['npv']),
-            irr=_json_float(data['irr']) if data['irr'] is not None else None,
-            investment_signal=str(data['investment_signal']),
-        )
-        for name, data in payload.items()
-    }
-
-
 def _row_to_vessel_inputs(row: VesselInputRow) -> VesselInputs:
     return vessel_inputs_from_object(row)
 
@@ -523,8 +475,8 @@ def _valuation_row_to_result(valuation: VesselValuationRow) -> ValuationResult:
         )
         for row in valuation.cashflow_years
     ]
-    sensitivity = _sensitivity_from_json(valuation.sensitivity)
-    scenarios = _scenarios_from_json(valuation.scenarios)
+    sensitivity = sensitivity_points_from_json(valuation.sensitivity)
+    scenarios = scenarios_from_json(valuation.scenarios)
     return ValuationResult(
         npv=valuation.npv,
         irr=valuation.irr,

@@ -1,4 +1,4 @@
-"""Shared fixtures for decision-insights unit tests."""
+"""Shared fixtures for vessel_valuation unit tests."""
 
 from datetime import date
 

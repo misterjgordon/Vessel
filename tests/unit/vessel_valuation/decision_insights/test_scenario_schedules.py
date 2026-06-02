@@ -1,5 +1,7 @@
-# Run: uv run --extra dev pytest tests/unit/decision_insights/test_scenario_schedules.py -v
-"""Per-year scenario schedule tests."""
+"""
+Per-year scenario schedule tests.
+uv run --extra dev pytest tests/unit/vessel_valuation/decision_insights/test_scenario_schedules.py -v
+"""
 
 from vessel_valuation.decision_insights.scenario_analysis import DEFAULT_SCENARIO_BUNDLES
 from vessel_valuation.decision_insights.scenario_schedules import (

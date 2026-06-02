@@ -1,5 +1,7 @@
-# Run: uv run --extra dev pytest tests/unit/decision_insights/test_breakeven.py -v
-"""Breakeven revenue search tests."""
+"""
+Breakeven revenue search tests.
+uv run --extra dev pytest tests/unit/vessel_valuation/decision_insights/test_breakeven.py -v
+"""
 
 import dataclasses
 

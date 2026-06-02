@@ -1,5 +1,7 @@
-# Run: uv run --extra dev pytest tests/unit/decision_insights/test_sensitivity.py -v
-"""Sensitivity analysis tests."""
+"""
+Sensitivity analysis tests.
+uv run --extra dev pytest tests/unit/vessel_valuation/decision_insights/test_sensitivity.py -v
+"""
 
 import pytest
 

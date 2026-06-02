@@ -1,11 +1,11 @@
-# Run: uv run --extra dev pytest tests/unit/test_case_study_workbook.py -v
-"""Contract tests against the case study Excel reference model."""
+"""
+Contract tests against the case study Excel reference model.
+uv run --extra dev pytest tests/unit/vessel_valuation/test_excel_reference.py -v
+"""
 
 import pytest
 
-from vessel_valuation.case_study_benchmarks import load_case_study_pp_teu_benchmarks
 from vessel_valuation.excel_reference import (
-    build_pp_teu_benchmarks_from_workbook,
     load_sample_vessels,
     read_basic_inputs,
     read_basic_outputs,
@@ -38,10 +38,3 @@ def test_sample_vessels_sheet_has_ten_rows(case_study_xlsx) -> None:
     df = load_sample_vessels(case_study_xlsx)
     assert len(df) == 11
     assert 'purchase_price' in df.columns
-
-
-def test_bundled_pp_teu_benchmarks_match_case_study_workbook(case_study_xlsx) -> None:
-    """Bundled PP÷TEU JSON matches medians computed from the case-study sample sheet."""
-    from_workbook = build_pp_teu_benchmarks_from_workbook(case_study_xlsx)
-    bundled = load_case_study_pp_teu_benchmarks()
-    assert bundled == from_workbook

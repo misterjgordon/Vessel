@@ -5,8 +5,8 @@ from dash import dash_table, dcc, html
 from app import component_ids as cid
 from app.form_defaults import FORM_DEFAULTS
 from app.form_formatting import format_form_field_value, form_field_input_type
-from app.serialization import _float_field
 from vessel_valuation.db.repository import VesselInputSummary
+from vessel_valuation.serialize import json_float
 from vessel_valuation.decision_insights.scenario_analysis import DEFAULT_SCENARIO_BUNDLES
 from vessel_valuation.file_parser import ACCEPTED_UPLOAD_EXTENSIONS, REQUIRED_COLUMNS
 
@@ -502,9 +502,9 @@ def scenario_table_rows(
         result = scenarios.get(bundle.name) if scenarios else None
         if result is not None:
             assert isinstance(result, dict)
-            npv_cell = format_npv(_float_field(result, 'npv'))
+            npv_cell = format_npv(json_float(result['npv'], 'npv'))
             irr_raw = result['irr']
-            irr_cell = format_irr(_float_field(result, 'irr') if irr_raw is not None else None)
+            irr_cell = format_irr(json_float(result['irr'], 'irr') if irr_raw is not None else None)
             signal_cell = str(result['investment_signal'])
         else:
             npv_cell = irr_cell = signal_cell = '—'

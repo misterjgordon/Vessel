@@ -41,7 +41,7 @@ Workbook contract tests read golden NPV/IRR from the Excel **Input & Output (Bas
 
 - `src/vessel_valuation/` — DCF engine, validation, file parser, decision insights, database repository
 - `app/` — Dash UI (investment summary, calculation detail, compare vessels)
-- `tests/unit/` — pytest including Excel reference contract
+- `tests/unit/` — pytest mirroring `src/vessel_valuation/` and `app/` layout
 - `tests/integration/` — repository round-trips (SQLite in-memory)
 - `docs/writeup.md` — approach, insights, known gaps
 

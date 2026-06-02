@@ -1,5 +1,7 @@
-# Run: uv run --extra dev pytest tests/unit/test_file_parser.py -v
-"""File parser tests — header validation, two-pass validation, sample workbook."""
+"""
+File parser tests — header validation, two-pass validation, sample workbook.
+uv run --extra dev pytest tests/unit/vessel_valuation/test_file_parser.py -v
+"""
 
 import io
 import json

@@ -1,15 +1,25 @@
-"""DCF engine tests — verified against the case-study Excel workbook.
+"""
+Unit tests for the DCF engine (``dcf.py``).
 
-uv run --extra dev pytest tests/unit/test_dcf.py -v
+Covers ``build_schedule``, ``calculate_npv``, ``calculate_irr``, ``investment_signal``,
+and ``compute_npv_irr``. Golden values are checked against the case-study workbook.
+uv run --extra dev pytest tests/unit/vessel_valuation/test_dcf.py -v
 """
 
+from dataclasses import replace
 from datetime import date
 
 import pytest
 
-from vessel_valuation.dcf import compute_npv_irr
+from vessel_valuation.dcf import (
+    build_schedule,
+    calculate_irr,
+    calculate_npv,
+    compute_npv_irr,
+    investment_signal,
+)
 from vessel_valuation.excel_reference import read_basic_inputs
-from vessel_valuation.schema import DcfResult, VesselInputs
+from vessel_valuation.schema import DcfResult, SIGNAL_BAND, VesselInputs
 
 
 def _vessel_inputs_from_basic_sheet(path) -> VesselInputs:
@@ -132,3 +142,72 @@ def test_payback_year_is_within_vessel_life(case_study_xlsx) -> None:
 
     assert result.payback_year is not None
     assert 1 <= result.payback_year <= inputs.vessel_life
+
+
+def test_build_schedule_single_year_life_has_two_rows(base_inputs: VesselInputs) -> None:
+    """One-year vessel life yields year 0 purchase row plus one operating year."""
+    short_life = replace(base_inputs, vessel_life=1)
+    schedule = build_schedule(short_life)
+    assert len(schedule) == 2
+    assert schedule[-1].year == 1
+    assert schedule[-1].net_cashflow == pytest.approx(
+        schedule[-1].free_cashflow + short_life.residual_value
+    )
+
+
+def test_build_schedule_skips_drydock_in_final_operating_year(base_inputs: VesselInputs) -> None:
+    """Drydock CapEx is excluded when the operating year equals vessel life."""
+    aligned = replace(base_inputs, vessel_life=5, drydock_frequency=5)
+    schedule = build_schedule(aligned)
+    final_operating = schedule[-1]
+    assert final_operating.year == 5
+    assert final_operating.drydock_capex == 0.0
+
+
+def test_calculate_npv_uses_supplied_discount_rate(base_inputs: VesselInputs) -> None:
+    """NPV recomputes discounting at the rate passed in, independent of schedule build."""
+    schedule = build_schedule(base_inputs)
+    at_input_rate = calculate_npv(schedule, base_inputs.discount_rate)
+    at_higher_rate = calculate_npv(schedule, base_inputs.discount_rate + 0.05)
+    assert at_higher_rate < at_input_rate
+
+
+def test_calculate_irr_matches_compute_npv_irr(case_study_xlsx) -> None:
+    """IRR from net cashflows matches the integrated engine result."""
+    inputs = _vessel_inputs_from_basic_sheet(case_study_xlsx)
+    schedule = build_schedule(inputs)
+    net_cashflows = [row.net_cashflow for row in schedule]
+    assert calculate_irr(net_cashflows) == pytest.approx(compute_npv_irr(inputs).irr, rel=1e-6)
+
+
+def test_calculate_irr_returns_none_when_no_root() -> None:
+    """Strictly positive cashflows yield no IRR in the search bracket."""
+    assert calculate_irr([100.0, 50.0, 60.0]) is None
+
+
+@pytest.mark.parametrize(
+    ('irr', 'discount_rate', 'expected'),
+    [
+        (0.15, 0.10, 'INVEST'),
+        (0.10 + SIGNAL_BAND, 0.10, 'MARGINAL'),
+        (0.10 - SIGNAL_BAND, 0.10, 'MARGINAL'),
+        (0.05, 0.10, 'DO NOT INVEST'),
+        (None, 0.10, 'DO NOT INVEST'),
+    ],
+)
+def test_investment_signal_bands(
+    irr: float | None,
+    discount_rate: float,
+    expected: str,
+) -> None:
+    """Investment signal classifies IRR relative to discount rate ± SIGNAL_BAND."""
+    assert investment_signal(irr, discount_rate) == expected
+
+
+def test_compute_npv_irr_npv_matches_calculate_npv(base_inputs: VesselInputs) -> None:
+    """Integrated NPV equals ``calculate_npv`` on the built schedule."""
+    result = compute_npv_irr(base_inputs)
+    assert result.npv == pytest.approx(
+        calculate_npv(result.schedule, base_inputs.discount_rate),
+        rel=1e-9,
+    )
