@@ -4,7 +4,8 @@
 
 import pytest
 
-from tests.unit.vessel_valuation.validation.conftest import BASE_RAW, raw
+from tests.unit.vessel_valuation.validation.conftest import BASE_RAW
+from tests.unit.vessel_valuation.validation.conftest import raw
 from vessel_valuation.validation import validate
 from vessel_valuation.validation.structural_rules import STRUCTURAL_RULES
 

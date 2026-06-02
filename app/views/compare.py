@@ -1,11 +1,17 @@
 """View 3 — compare free cash flow across two saved valuations."""
 
+from typing import TYPE_CHECKING
+
 import plotly.graph_objects as go
-from dash import dash_table, dcc, html
+from dash import dash_table
+from dash import dcc
+from dash import html
 
 from app import component_ids as cid
 from app.views.calculation import _format_money
-from vessel_valuation.schema import CashflowYear
+
+if TYPE_CHECKING:
+    from vessel_valuation.schema import CashflowYear
 
 
 def compare_view() -> html.Div:
@@ -53,7 +59,7 @@ def compare_view() -> html.Div:
             dcc.Graph(id=cid.CHART_COMPARE),
             dash_table.DataTable(
                 id=cid.TABLE_COMPARE,
-                columns=compare_table_columns(),  # pyright: ignore[reportArgumentType]
+                columns=compare_table_columns(),  # ty: ignore[invalid-argument-type]
                 data=[],
                 page_size=30,
                 style_table={'overflowX': 'auto'},

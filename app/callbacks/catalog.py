@@ -1,12 +1,18 @@
 """Saved-vessel dropdown refresh callbacks."""
 
-from dash import Dash
-from dash.dependencies import Input, Output
-from sqlalchemy.orm import Session, sessionmaker
+from typing import TYPE_CHECKING
+
+from dash.dependencies import Input
+from dash.dependencies import Output
 
 from app import component_ids as cid
 from app.callbacks._helpers import vessel_dropdown_options
 from vessel_valuation.db.connection import session_scope
+
+if TYPE_CHECKING:
+    from dash import Dash
+    from sqlalchemy.orm import Session
+    from sqlalchemy.orm import sessionmaker
 
 
 def register(app: Dash, session_factory: sessionmaker[Session]) -> None:

@@ -1,10 +1,16 @@
 """Per-year cashflow schedules for Inputs and Best / Base / Worst scenarios."""
 
 import dataclasses
+from typing import TYPE_CHECKING
 
+from vessel_valuation.dcf import build_schedule
+from vessel_valuation.dcf import compute_npv_irr
 from vessel_valuation.decision_insights.scenario_analysis import DEFAULT_SCENARIO_BUNDLES
-from vessel_valuation.dcf import build_schedule, compute_npv_irr
-from vessel_valuation.schema import CashflowYear, ScenarioBundle, VesselInputs
+
+if TYPE_CHECKING:
+    from vessel_valuation.schema import CashflowYear
+    from vessel_valuation.schema import ScenarioBundle
+    from vessel_valuation.schema import VesselInputs
 
 INPUTS_SCENARIO_NAME = 'Inputs'
 

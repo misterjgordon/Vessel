@@ -1,6 +1,7 @@
 """Domain dataclasses for vessel valuation inputs and computed results."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from dataclasses import field
 from datetime import date
 
 SCRAP_RATE_PER_TONNE: float = 400.0

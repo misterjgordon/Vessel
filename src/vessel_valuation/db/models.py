@@ -1,19 +1,21 @@
 """SQLAlchemy ORM models — column names mirror ``schema.py`` dataclass fields."""
 
-from datetime import date, datetime
+from datetime import date
+from datetime import datetime
 
-from sqlalchemy import (
-    Boolean,
-    Date,
-    DateTime,
-    Float,
-    ForeignKey,
-    Integer,
-    String,
-    Text,
-    UniqueConstraint,
-)
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy import Boolean
+from sqlalchemy import Date
+from sqlalchemy import DateTime
+from sqlalchemy import Float
+from sqlalchemy import ForeignKey
+from sqlalchemy import Integer
+from sqlalchemy import String
+from sqlalchemy import Text
+from sqlalchemy import UniqueConstraint
+from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
 from sqlalchemy.types import JSON
 
 
@@ -33,7 +35,7 @@ class RawVesselSubmission(Base):
     raw_had_errors: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     raw_payload: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False)
 
-    vessel_inputs: Mapped[list['VesselInputRow']] = relationship(back_populates='submission')
+    vessel_inputs: Mapped[list[VesselInputRow]] = relationship(back_populates='submission')
 
 
 class VesselInputRow(Base):
@@ -68,7 +70,7 @@ class VesselInputRow(Base):
     co2_carbon_factor: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     submission: Mapped[RawVesselSubmission] = relationship(back_populates='vessel_inputs')
-    valuations: Mapped[list['VesselValuationRow']] = relationship(back_populates='vessel_input')
+    valuations: Mapped[list[VesselValuationRow]] = relationship(back_populates='vessel_input')
 
 
 class VesselValuationRow(Base):
@@ -92,7 +94,7 @@ class VesselValuationRow(Base):
     scenarios: Mapped[dict[str, dict[str, object]] | None] = mapped_column(JSON, nullable=True)
 
     vessel_input: Mapped[VesselInputRow] = relationship(back_populates='valuations')
-    cashflow_years: Mapped[list['VesselCashflowYearRow']] = relationship(
+    cashflow_years: Mapped[list[VesselCashflowYearRow]] = relationship(
         back_populates='valuation',
         order_by='VesselCashflowYearRow.year',
     )

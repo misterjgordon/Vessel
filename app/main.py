@@ -8,8 +8,8 @@ from dash import Dash
 from app.callbacks import register_callbacks
 from app.layout import app_layout
 from vessel_valuation.config import get_app_database_url
-from vessel_valuation.db.connection import create_db_engine, create_session_factory
-from vessel_valuation.db.repository import init_schema
+from vessel_valuation.db.connection import create_db_engine
+from vessel_valuation.db.connection import create_session_factory
 
 
 def create_app() -> Dash:
@@ -24,7 +24,6 @@ def create_app() -> Dash:
 
     db_url = get_app_database_url().url
     engine = create_db_engine(db_url)
-    init_schema(engine)
     session_factory = create_session_factory(engine)
 
     dash_app.layout = app_layout

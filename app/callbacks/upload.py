@@ -1,28 +1,31 @@
 """File upload and upload-row selection callbacks."""
 
 import base64
+from typing import TYPE_CHECKING
 
-from dash import Dash, no_update
-from dash.dependencies import Input, Output, State
-from sqlalchemy.orm import Session, sessionmaker
+from dash import Dash
+from dash import no_update
+from dash.dependencies import Input
+from dash.dependencies import Output
+from dash.dependencies import State
 
 from app import component_ids as cid
-from app.callbacks._helpers import (
-    FORM_COMPONENT_IDS,
-    LOAD_FORM_OUTPUTS_DUPLICATE,
-    form_tuple_from_raw,
-    raw_from_upload_store,
-    upload_preview_row,
-)
-from app.views.investment import (
-    INPUT_SOURCE_BTN_ACTIVE_CLASS,
-    INPUT_SOURCE_BTN_CLASS,
-    MODAL_HIDDEN_CLASS,
-    MODAL_OPEN_CLASS,
-)
+from app.callbacks._helpers import FORM_COMPONENT_IDS
+from app.callbacks._helpers import LOAD_FORM_OUTPUTS_DUPLICATE
+from app.callbacks._helpers import form_tuple_from_raw
+from app.callbacks._helpers import raw_from_upload_store
+from app.callbacks._helpers import upload_preview_row
+from app.views.investment import INPUT_SOURCE_BTN_ACTIVE_CLASS
+from app.views.investment import INPUT_SOURCE_BTN_CLASS
+from app.views.investment import MODAL_HIDDEN_CLASS
+from app.views.investment import MODAL_OPEN_CLASS
 from vessel_valuation.db.connection import session_scope
 from vessel_valuation.db.repository import list_fleet_vessel_inputs
 from vessel_valuation.file_parser import parse_upload
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
+    from sqlalchemy.orm import sessionmaker
 
 
 def register(app: Dash, session_factory: sessionmaker[Session]) -> None:

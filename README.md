@@ -1,27 +1,27 @@
 # Vessel
 
-Welles-style single-vessel DCF valuation for the Finance Solution Developer case study.
+DCF valuation for vessel.....
 
-## Setup
-
-```bash
-cd /Users/joel/Github/Vessel
-make sync
-make dev
-```
-
-Open http://localhost:8050. The app uses **file-backed SQLite** (`vessel_valuation.db` in the project root). Code changes reload automatically (`DASH_DEBUG=1`). No Docker required for day-to-day work.
-
-To stop: Ctrl+C in the terminal running `make dev`.
-
-### Optional — Docker (Postgres + containerized app)
-
-Only if you want to exercise Postgres locally. Requires Docker Desktop. **Rebuild the image after every code change** (`make docker-up`).
+## Quick start
 
 ```bash
-make docker-up    # http://localhost:8050, Postgres on localhost:5432
-make docker-down  # stop containers
+git clone git@github.com:misterjgordon/Vessel.git
+cd Vessel
+./install.sh
+./run.sh
 ```
+
+Open http://localhost:8050. Data is stored in **SQLite** (`vessel_valuation.db` in the project root). Code changes reload automatically. Stop the server with Ctrl+C.
+
+`install.sh` installs [uv](https://docs.astral.sh/uv/getting-started/installation/) if needed, syncs dependencies (Python 3.14 via the project pin), and runs database migrations. Run it again after pulling dependency changes.
+
+Day-to-day after the first install:
+
+```bash
+./run.sh
+```
+
+Or with Make: `make dev` (install: `make install` or `make start` to install and run in one step).
 
 ## Case study assets
 

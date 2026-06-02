@@ -2,8 +2,11 @@
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
-from vessel_valuation.schema import ValidationThresholds, VesselInputs
+if TYPE_CHECKING:
+    from vessel_valuation.schema import ValidationThresholds
+    from vessel_valuation.schema import VesselInputs
 
 SENTINELS: frozenset[str] = frozenset(
     {'#value!', '#n/a', '#ref!', '#div/0!', '#null!', 'n/a', '-', ''}

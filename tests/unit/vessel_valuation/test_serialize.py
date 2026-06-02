@@ -4,23 +4,19 @@ from datetime import date
 
 import pytest
 
-from vessel_valuation.schema import (
-    CashflowYear,
-    ScenarioResult,
-    SensitivityPoint,
-    ValuationResult,
-)
-from vessel_valuation.serialize import (
-    cashflow_year_from_json,
-    cashflow_year_to_json,
-    scenario_result_to_json,
-    scenarios_from_json,
-    scenarios_to_json,
-    sensitivity_point_to_json,
-    sensitivity_points_from_json,
-    sensitivity_points_to_json,
-    valuation_summary_to_json,
-)
+from vessel_valuation.schema import CashflowYear
+from vessel_valuation.schema import ScenarioResult
+from vessel_valuation.schema import SensitivityPoint
+from vessel_valuation.schema import ValuationResult
+from vessel_valuation.serialize import cashflow_year_from_json
+from vessel_valuation.serialize import cashflow_year_to_json
+from vessel_valuation.serialize import scenario_result_to_json
+from vessel_valuation.serialize import scenarios_from_json
+from vessel_valuation.serialize import scenarios_to_json
+from vessel_valuation.serialize import sensitivity_point_to_json
+from vessel_valuation.serialize import sensitivity_points_from_json
+from vessel_valuation.serialize import sensitivity_points_to_json
+from vessel_valuation.serialize import valuation_summary_to_json
 
 
 def test_sensitivity_points_round_trip() -> None:

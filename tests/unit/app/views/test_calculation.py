@@ -2,10 +2,8 @@
 
 from datetime import date
 
-from app.views.calculation import (
-    build_cashflow_chart_figure,
-    schedule_to_dcf_table,
-)
+from app.views.calculation import build_cashflow_chart_figure
+from app.views.calculation import schedule_to_dcf_table
 from vessel_valuation.schema import CashflowYear
 
 
@@ -45,4 +43,6 @@ def test_build_cashflow_chart_figure_includes_all_line_items() -> None:
 
     figure = build_cashflow_chart_figure(schedule)
 
-    assert len(figure['data']) == 8
+    traces = figure['data']
+    assert isinstance(traces, list)
+    assert len(traces) == 8

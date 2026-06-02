@@ -2,8 +2,10 @@
 
 import dataclasses
 
-from vessel_valuation.dcf import build_schedule, calculate_irr
-from vessel_valuation.schema import SensitivityPoint, VesselInputs
+from vessel_valuation.dcf import build_schedule
+from vessel_valuation.dcf import calculate_irr
+from vessel_valuation.schema import SensitivityPoint
+from vessel_valuation.schema import VesselInputs
 
 _SENSITIVITY_STEP: int = 1_000
 _SENSITIVITY_DEFAULT_BAND: float = 5_000.0

@@ -11,15 +11,15 @@ from datetime import date
 
 import pytest
 
-from vessel_valuation.dcf import (
-    build_schedule,
-    calculate_irr,
-    calculate_npv,
-    compute_npv_irr,
-    investment_signal,
-)
+from vessel_valuation.dcf import build_schedule
+from vessel_valuation.dcf import calculate_irr
+from vessel_valuation.dcf import calculate_npv
+from vessel_valuation.dcf import compute_npv_irr
+from vessel_valuation.dcf import investment_signal
 from vessel_valuation.excel_reference import read_basic_inputs
-from vessel_valuation.schema import DcfResult, SIGNAL_BAND, VesselInputs
+from vessel_valuation.schema import SIGNAL_BAND
+from vessel_valuation.schema import DcfResult
+from vessel_valuation.schema import VesselInputs
 
 
 def _vessel_inputs_from_basic_sheet(path) -> VesselInputs:
@@ -178,6 +178,16 @@ def test_calculate_irr_matches_compute_npv_irr(case_study_xlsx) -> None:
     schedule = build_schedule(inputs)
     net_cashflows = [row.net_cashflow for row in schedule]
     assert calculate_irr(net_cashflows) == pytest.approx(compute_npv_irr(inputs).irr, rel=1e-6)
+
+
+def test_calculate_irr_discounts_cashflows_to_zero_npv(case_study_xlsx) -> None:
+    """Returned IRR drives the net-cashflow NPV to approximately zero."""
+    inputs = _vessel_inputs_from_basic_sheet(case_study_xlsx)
+    net_cashflows = [row.net_cashflow for row in build_schedule(inputs)]
+    irr = calculate_irr(net_cashflows)
+    assert irr is not None
+    npv_at_irr = sum(cf / (1 + irr) ** t for t, cf in enumerate(net_cashflows))
+    assert npv_at_irr == pytest.approx(0.0, abs=1e-4)
 
 
 def test_calculate_irr_returns_none_when_no_root() -> None:

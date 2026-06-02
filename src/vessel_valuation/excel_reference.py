@@ -2,8 +2,12 @@
 
 from pathlib import Path
 from typing import Any
+from typing import cast
 
 import pandas as pd
+
+from vessel_valuation.validation import median_pp_teu_factor
+from vessel_valuation.validation import validate
 
 INPUT_OUTPUT_SHEET = 'Input & Output (Basic)'
 SAMPLE_DATA_SHEET = 'Sample Data for Testing'
@@ -80,12 +84,10 @@ def load_sample_vessels(path: Path) -> pd.DataFrame:
 
 def build_pp_teu_benchmarks_from_workbook(path: Path) -> dict[int, float]:
     """Compute median purchase-price÷TEU ratios from a case-study sample sheet."""
-    from vessel_valuation.validation import median_pp_teu_factor, validate
-
     df = load_sample_vessels(path)
     inputs = []
     for _, row in df.iterrows():
-        result = validate(row.to_dict())
+        result = validate(cast('dict[str, object]', row.to_dict()))
         if result.inputs is not None:
             inputs.append(result.inputs)
     return median_pp_teu_factor(inputs)

@@ -1,10 +1,12 @@
 """Full valuation enrichment — core DCF plus all decision-insight layers."""
 
+from vessel_valuation.dcf import compute_npv_irr
 from vessel_valuation.decision_insights.breakeven import breakeven_revenue
 from vessel_valuation.decision_insights.scenario_analysis import scenario_returns
 from vessel_valuation.decision_insights.sensitivity import sensitivity_analysis
-from vessel_valuation.dcf import compute_npv_irr
-from vessel_valuation.schema import ScenarioBundle, ValuationResult, VesselInputs
+from vessel_valuation.schema import ScenarioBundle
+from vessel_valuation.schema import ValuationResult
+from vessel_valuation.schema import VesselInputs
 
 
 def enrich(

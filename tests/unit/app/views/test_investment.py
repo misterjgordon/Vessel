@@ -1,6 +1,8 @@
 """Unit tests for saved-vessel dropdown label formatting."""
 
-from datetime import UTC, date, datetime
+from datetime import UTC
+from datetime import date
+from datetime import datetime
 
 from app.views.investment import format_saved_vessel_option_label
 from vessel_valuation.db.repository import VesselInputSummary

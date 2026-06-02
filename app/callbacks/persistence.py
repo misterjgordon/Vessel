@@ -1,34 +1,41 @@
 """Save, load, and delete saved vessel callbacks."""
 
-from dash import Dash, no_update
-from dash.dependencies import Input, Output, State
-from sqlalchemy.orm import Session, sessionmaker
+from typing import TYPE_CHECKING
+from typing import cast
+
+from dash import Dash
+from dash import no_update
+from dash.dependencies import Input
+from dash.dependencies import Output
+from dash.dependencies import State
 
 from app import component_ids as cid
-from app.callbacks._helpers import (
-    FORM_COMPONENT_IDS,
-    FORM_NO_UPDATES,
-    LOAD_FORM_OUTPUTS_DUPLICATE,
-    default_form_values_tuple,
-    form_values_tuple,
-    normalize_vessel_input_ids,
-    optional_float,
-)
-from app.serialization import (
-    schedules_to_store,
-    valuation_to_store,
-    vessel_inputs_to_store,
-)
-from app.views.investment import MODAL_HIDDEN_CLASS, MODAL_OPEN_CLASS
+from app.callbacks._helpers import FORM_COMPONENT_IDS
+from app.callbacks._helpers import FORM_NO_UPDATES
+from app.callbacks._helpers import LOAD_FORM_OUTPUTS_DUPLICATE
+from app.callbacks._helpers import default_form_values_tuple
+from app.callbacks._helpers import form_values_tuple
+from app.callbacks._helpers import normalize_vessel_input_ids
+from app.callbacks._helpers import optional_float
+from app.serialization import schedules_to_store
+from app.serialization import valuation_to_store
+from app.serialization import vessel_inputs_to_store
+from app.views.investment import MODAL_HIDDEN_CLASS
+from app.views.investment import MODAL_OPEN_CLASS
 from vessel_valuation.db.connection import session_scope
-from vessel_valuation.db.repository import (
-    delete_vessel_inputs,
-    get_valuation,
-    get_vessel_inputs,
-    load_pp_teu_factor_benchmarks,
-    persist_vessel_submission,
-)
+from vessel_valuation.db.repository import delete_vessel_inputs
+from vessel_valuation.db.repository import get_valuation
+from vessel_valuation.db.repository import get_vessel_inputs
+from vessel_valuation.db.repository import load_pp_teu_factor_benchmarks
+from vessel_valuation.db.repository import persist_vessel_submission
+from vessel_valuation.decision_insights.scenario_analysis import DEFAULT_SCENARIO_BUNDLES
 from vessel_valuation.decision_insights.scenario_schedules import scenario_schedules
+from vessel_valuation.serialize import scenario_bundles_from_json
+from vessel_valuation.serialize import scenario_bundles_to_json
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
+    from sqlalchemy.orm import sessionmaker
 
 
 def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
@@ -98,11 +105,13 @@ def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
                 *((no_update,) * len(FORM_COMPONENT_IDS)),
             )
 
-        schedules = scenario_schedules(inputs)
+        default_bundles = list(DEFAULT_SCENARIO_BUNDLES)
+        schedules = scenario_schedules(inputs, bundles=default_bundles)
         store_data: dict[str, object] = {
             'inputs': vessel_inputs_to_store(inputs),
             'valuation': valuation_to_store(valuation),
             'schedules': schedules_to_store(schedules),
+            'scenario_bundles': scenario_bundles_to_json(default_bundles),
             'warnings': [],
             'vessel_input_id': vessel_input_id,
         }
@@ -269,13 +278,14 @@ def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
                 'validation-banner ok',
             )
 
-        persist_context = compute_store.get('persist_context')
-        if not isinstance(persist_context, dict):
+        persist_context_raw = compute_store.get('persist_context')
+        if not isinstance(persist_context_raw, dict):
             return (
                 no_update,
                 'Loaded entries are already saved. Calculate again to persist new inputs.',
                 'validation-banner error',
             )
+        persist_context = cast('dict[str, object]', persist_context_raw)
 
         raw_payload = persist_context.get('raw_payload')
         source = persist_context.get('source')
@@ -288,27 +298,40 @@ def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
 
         rev_min_raw = persist_context.get('rev_min')
         rev_max_raw = persist_context.get('rev_max')
-        rev_min_val = optional_float(rev_min_raw) if rev_min_raw is not None else None
-        rev_max_val = optional_float(rev_max_raw) if rev_max_raw is not None else None
+        rev_min_val = (
+            optional_float(cast('int | float | str', rev_min_raw)) if rev_min_raw is not None else None
+        )
+        rev_max_val = (
+            optional_float(cast('int | float | str', rev_max_raw)) if rev_max_raw is not None else None
+        )
+
+        bundles_raw = persist_context.get('scenario_bundles')
+        scenario_bundles = (
+            scenario_bundles_from_json(cast('list[dict[str, object]]', bundles_raw))
+            if isinstance(bundles_raw, list)
+            else None
+        )
 
         with session_scope(session_factory) as session:
             factor_benchmarks = load_pp_teu_factor_benchmarks(session)
             try:
                 persisted = persist_vessel_submission(
                     session,
-                    raw_payload,
+                    cast('dict[str, object]', raw_payload),
                     source=source,
                     filename=None,
                     pp_teu_factor_benchmarks=factor_benchmarks,
                     rev_min=rev_min_val,
                     rev_max=rev_max_val,
+                    scenario_bundles=scenario_bundles,
                 )
             except ValueError as exc:
                 return no_update, str(exc), 'validation-banner error'
 
         inputs_raw = compute_store['inputs']
         assert isinstance(inputs_raw, dict)
-        vessel_name = str(inputs_raw.get('vessel_name', 'vessel'))
+        inputs = cast('dict[str, object]', inputs_raw)
+        vessel_name = str(inputs.get('vessel_name', 'vessel'))
 
         updated_store = dict(compute_store)
         updated_store['vessel_input_id'] = persisted.vessel_input_id

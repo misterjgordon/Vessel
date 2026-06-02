@@ -1,6 +1,7 @@
 """Top-level Dash layout — header and tabbed views."""
 
-from dash import dcc, html
+from dash import dcc
+from dash import html
 
 from app import component_ids as cid
 from app.views.calculation import calculation_view

@@ -3,7 +3,8 @@
 from sqlalchemy import inspect
 
 from vessel_valuation.db.models import VesselInputRow
-from vessel_valuation.mapping import VESSEL_INPUT_FIELD_NAMES, VESSEL_INPUT_ROW_META_COLUMNS
+from vessel_valuation.mapping import VESSEL_INPUT_FIELD_NAMES
+from vessel_valuation.mapping import VESSEL_INPUT_ROW_META_COLUMNS
 
 
 def test_vessel_input_row_columns_match_field_names() -> None:

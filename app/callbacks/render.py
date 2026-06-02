@@ -1,38 +1,41 @@
 """Investment, calculation, and compare view render callbacks."""
 
-from dash import Dash, html
-from dash.dependencies import Input, Output, State
-from sqlalchemy.orm import Session, sessionmaker
+from typing import TYPE_CHECKING
+from typing import cast
+
+from dash import Dash
+from dash import html
+from dash.dependencies import Input
+from dash.dependencies import Output
+from dash.dependencies import State
 
 from app import component_ids as cid
-from app.callbacks._helpers import (
-    EMPTY_COMPARE_FIGURE,
-    calculation_schedules,
-    sensitivity_figure,
-    signal_css_class,
-)
-from vessel_valuation.serialize import json_float
-from app.views.calculation import (
-    build_cashflow_chart_figure,
-    empty_cashflow_figure,
-    empty_dcf_columns,
-    schedule_to_dcf_table,
-)
-from app.views.compare import (
-    build_compare_figure,
-    build_compare_rows,
-    compare_table_columns,
-)
-from app.views.investment import (
-    format_irr,
-    format_npv,
-    format_payback_year,
-    format_rate_per_day,
-    format_signal_label,
-    scenario_table_rows,
-)
+from app.callbacks._helpers import EMPTY_COMPARE_FIGURE
+from app.callbacks._helpers import calculation_schedules
+from app.callbacks._helpers import sensitivity_figure
+from app.callbacks._helpers import signal_css_class
+from app.views.calculation import build_cashflow_chart_figure
+from app.views.calculation import empty_cashflow_figure
+from app.views.calculation import empty_dcf_columns
+from app.views.calculation import schedule_to_dcf_table
+from app.views.compare import build_compare_figure
+from app.views.compare import build_compare_rows
+from app.views.compare import compare_table_columns
+from app.views.investment import format_irr
+from app.views.investment import format_npv
+from app.views.investment import format_payback_year
+from app.views.investment import format_rate_per_day
+from app.views.investment import format_signal_label
+from app.views.investment import scenario_table_rows
 from vessel_valuation.db.connection import session_scope
-from vessel_valuation.db.repository import get_valuation, get_vessel_inputs
+from vessel_valuation.db.repository import get_valuation
+from vessel_valuation.db.repository import get_vessel_inputs
+from vessel_valuation.serialize import json_float
+from vessel_valuation.serialize import scenario_bundles_from_json
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
+    from sqlalchemy.orm import sessionmaker
 
 
 def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
@@ -135,8 +138,9 @@ def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
                 empty_figure,
             )
 
-        valuation = store['valuation']
-        assert isinstance(valuation, dict)
+        valuation_raw = store['valuation']
+        assert isinstance(valuation_raw, dict)
+        valuation = cast('dict[str, object]', valuation_raw)
         npv = json_float(valuation['npv'], 'npv')
         irr_raw = valuation['irr']
         irr = json_float(valuation['irr'], 'irr') if irr_raw is not None else None
@@ -154,13 +158,20 @@ def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
         elif isinstance(payback_raw, float):
             payback = int(payback_raw)
 
-        sensitivity = valuation['sensitivity']
-        assert isinstance(sensitivity, list)
-        figure = sensitivity_figure(sensitivity)
+        sensitivity_raw = valuation['sensitivity']
+        assert isinstance(sensitivity_raw, list)
+        figure = sensitivity_figure(cast('list[dict[str, object]]', sensitivity_raw))
 
-        scenarios = valuation['scenarios']
-        assert isinstance(scenarios, dict)
-        scenarios_rows = scenario_table_rows(scenarios)
+        scenarios_raw = valuation['scenarios']
+        assert isinstance(scenarios_raw, dict)
+        scenarios = cast('dict[str, dict[str, object]]', scenarios_raw)
+        bundles_raw = store.get('scenario_bundles')
+        bundles = (
+            scenario_bundles_from_json(cast('list[dict[str, object]]', bundles_raw))
+            if isinstance(bundles_raw, list)
+            else None
+        )
+        scenarios_rows = scenario_table_rows(scenarios, bundles=bundles)
         signal_css = signal_css_class(signal)
 
         return (

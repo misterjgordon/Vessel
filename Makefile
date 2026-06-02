@@ -1,7 +1,17 @@
-.PHONY: sync test test-integration test-all lint format run dev docker-up docker-down docker-logs help
+.PHONY: sync setup install start test test-integration test-all lint format run dev help
+
+code := src tests app
 
 sync:
 	uv sync
+
+setup: sync
+
+install:
+	./install.sh
+
+start: install
+	$(MAKE) dev
 
 test:
 	uv run pytest tests/unit -v
@@ -11,42 +21,32 @@ test-integration:
 
 test-all: test test-integration
 
-lint: ## run ruff/ty checking only, no formatting or fixing
+format: ## format Python code (autopep8, ruff fix, ty)
+	@uv run autopep8 --recursive --in-place $(code)
+	@uv run ruff check $(code) --select I001 --fix --quiet
+	@uv run ruff check $(code) --quiet --fix
+	@uv run ty check --error-on-warning
+
+lint: ## lint/type-check only, no formatting
 	@uv run ruff check --fix
 	@uv run ty check
 
-format:
-	uv run ruff format src tests app
-
-# Local Dash + file SQLite (default for active development).
-DEV_DATABASE_URL=sqlite:///vessel_valuation.db
-
 run:
-	DATABASE_URL=$(DEV_DATABASE_URL) uv run python -m app.main
+	uv run python -m vessel_valuation.db.migrate
+	uv run python -m app.main
 
 dev:
-	DATABASE_URL=$(DEV_DATABASE_URL) uv run alembic upgrade head
-	DATABASE_URL=$(DEV_DATABASE_URL) DASH_DEBUG=1 uv run python -m app.main
-
-# Optional Postgres + containerized app (rebuild required after code changes).
-docker-up:
-	docker compose up --build
-
-docker-down:
-	docker compose down
-
-docker-logs:
-	docker compose logs -f app
+	uv run python -m vessel_valuation.db.migrate
+	DASH_DEBUG=1 uv run python -m app.main
 
 help:
-	@echo "make sync              - install dependencies (uv sync, includes dev group)"
+	@echo "make install           - ./install.sh (deps + migrate)"
+	@echo "make start             - install then run app (first-time setup)"
+	@echo "make sync              - install dependencies (uv sync)"
+	@echo "make dev               - migrate and run Dash with hot reload"
+	@echo "make run               - migrate and run Dash without hot reload"
 	@echo "make test              - run unit tests"
 	@echo "make test-integration  - run repository / DB integration tests"
 	@echo "make test-all          - run unit + integration tests"
 	@echo "make lint              - ruff check --fix + ty check"
-	@echo "make format            - ruff format src, tests, and app"
-	@echo "make dev               - local Dash + SQLite (http://localhost:8050, hot reload)"
-	@echo "make run               - local Dash without running migrations first"
-	@echo "make docker-up         - optional Postgres + app in Docker"
-	@echo "make docker-down       - stop docker compose stack"
-	@echo "make docker-logs       - follow app container logs"
+	@echo "make format            - autopep8, ruff fix, ty check (fails on ty warnings)"

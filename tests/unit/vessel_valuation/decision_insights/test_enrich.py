@@ -6,7 +6,9 @@ uv run --extra dev pytest tests/unit/vessel_valuation/decision_insights/test_enr
 import pytest
 
 from vessel_valuation.decision_insights.enrich import enrich
-from vessel_valuation.schema import DcfResult, ValuationResult, VesselInputs
+from vessel_valuation.schema import DcfResult
+from vessel_valuation.schema import ValuationResult
+from vessel_valuation.schema import VesselInputs
 
 
 def test_enrich_returns_valuation_result(base_inputs: VesselInputs) -> None:

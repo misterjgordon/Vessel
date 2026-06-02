@@ -2,16 +2,14 @@
 
 import pytest
 
-from vessel_valuation.config import (
-    DEFAULT_APP_DATABASE_URL,
-    DEFAULT_MIGRATION_DATABASE_URL,
-    DEFAULT_RUNTIME_DATABASE_URL,
-    DatabaseUrl,
-    DatabaseUrlSource,
-    get_app_database_url,
-    get_database_url,
-    get_migration_database_url,
-)
+from vessel_valuation.config import DEFAULT_APP_DATABASE_URL
+from vessel_valuation.config import DEFAULT_MIGRATION_DATABASE_URL
+from vessel_valuation.config import DEFAULT_RUNTIME_DATABASE_URL
+from vessel_valuation.config import DatabaseUrl
+from vessel_valuation.config import DatabaseUrlSource
+from vessel_valuation.config import get_app_database_url
+from vessel_valuation.config import get_database_url
+from vessel_valuation.config import get_migration_database_url
 
 
 @pytest.fixture

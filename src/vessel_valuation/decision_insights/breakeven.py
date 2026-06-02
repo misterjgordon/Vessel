@@ -1,11 +1,16 @@
 """Breakeven revenue search — revenue per day at which NPV equals zero."""
 
 import dataclasses
+from typing import TYPE_CHECKING
+from typing import cast
 
 from scipy.optimize import brentq
 
-from vessel_valuation.dcf import build_schedule, calculate_npv
-from vessel_valuation.schema import VesselInputs
+from vessel_valuation.dcf import build_schedule
+from vessel_valuation.dcf import calculate_npv
+
+if TYPE_CHECKING:
+    from vessel_valuation.schema import VesselInputs
 
 _BREAKEVEN_HI: float = 1_000_000.0
 
@@ -29,7 +34,6 @@ def breakeven_revenue(inputs: VesselInputs) -> float | None:
         return calculate_npv(schedule, inputs.discount_rate)
 
     try:
-        root = brentq(_npv_at_rev, 1.0, _BREAKEVEN_HI)
-        return float(root)  # type: ignore[arg-type]
+        return float(cast('float', brentq(_npv_at_rev, 1.0, _BREAKEVEN_HI)))
     except ValueError:
         return None

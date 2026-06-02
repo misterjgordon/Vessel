@@ -4,39 +4,44 @@ import statistics
 from collections import defaultdict
 from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import UTC, date, datetime
+from datetime import UTC
+from datetime import date
+from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import delete, func, select
-from sqlalchemy.engine import Engine
-from sqlalchemy.orm import Session, selectinload, sessionmaker
+from sqlalchemy import delete
+from sqlalchemy import func
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import sessionmaker
 
-from vessel_valuation.db.models import (
-    Base,
-    RawVesselSubmission,
-    VesselBenchmarkRow,
-    VesselCashflowYearRow,
-    VesselInputRow,
-    VesselValuationRow,
-)
+from vessel_valuation.db.connection import create_db_engine
+from vessel_valuation.db.connection import create_session_factory
+from vessel_valuation.db.models import Base
+from vessel_valuation.db.models import RawVesselSubmission
+from vessel_valuation.db.models import VesselBenchmarkRow
+from vessel_valuation.db.models import VesselCashflowYearRow
+from vessel_valuation.db.models import VesselInputRow
+from vessel_valuation.db.models import VesselValuationRow
 from vessel_valuation.decision_insights.enrich import enrich
-from vessel_valuation.mapping import vessel_inputs_from_object, vessel_inputs_kwargs
-from vessel_valuation.schema import (
-    CashflowYear,
-    ValuationResult,
-    VesselInputs,
-)
-from vessel_valuation.serialize import (
-    sensitivity_points_from_json,
-    sensitivity_points_to_json,
-    scenarios_from_json,
-    scenarios_to_json,
-)
-from vessel_valuation.validation import (
-    SENTINELS,
-    median_pp_teu_factor,
-    nearest_teu_bucket,
-    validate,
-)
+from vessel_valuation.mapping import vessel_inputs_from_object
+from vessel_valuation.mapping import vessel_inputs_kwargs
+from vessel_valuation.schema import CashflowYear
+from vessel_valuation.schema import ScenarioBundle
+from vessel_valuation.schema import ValuationResult
+from vessel_valuation.schema import VesselInputs
+from vessel_valuation.serialize import scenarios_from_json
+from vessel_valuation.serialize import scenarios_to_json
+from vessel_valuation.serialize import sensitivity_points_from_json
+from vessel_valuation.serialize import sensitivity_points_to_json
+from vessel_valuation.validation import SENTINELS
+from vessel_valuation.validation import median_pp_teu_factor
+from vessel_valuation.validation import nearest_teu_bucket
+from vessel_valuation.validation import validate
+
+if TYPE_CHECKING:
+    from sqlalchemy.engine import Engine
 
 # Seed medians for empty DB — matches validation._TEU_PRICE_SEEDS until fleet data exists.
 _BENCHMARK_SEEDS: dict[int, float] = {
@@ -95,10 +100,7 @@ def seed_benchmarks_if_empty(engine: Engine) -> None:
 
 def payload_had_sentinels(payload: Mapping[str, object]) -> bool:
     """Return True if any value in the raw payload is an Excel-style sentinel."""
-    for value in payload.values():
-        if _value_is_sentinel(value):
-            return True
-    return False
+    return any(_value_is_sentinel(value) for value in payload.values())
 
 
 def _value_is_sentinel(value: object) -> bool:
@@ -408,6 +410,7 @@ def persist_vessel_submission(
     pp_teu_factor_benchmarks: dict[int, float] | None = None,
     rev_min: float | None = None,
     rev_max: float | None = None,
+    scenario_bundles: list[ScenarioBundle] | None = None,
 ) -> PersistedVessel:
     """Run full pipeline: raw → validate → silver → enrich → gold → refresh benchmarks.
 
@@ -434,7 +437,7 @@ def persist_vessel_submission(
         )
 
     vessel_input_id = save_vessel_inputs(session, submission_id, inputs)
-    result = enrich(inputs, rev_min=rev_min, rev_max=rev_max)
+    result = enrich(inputs, bundles=scenario_bundles, rev_min=rev_min, rev_max=rev_max)
     valuation_id = save_valuation(session, vessel_input_id, result)
     refresh_benchmarks(session)
     session.flush()
@@ -448,8 +451,6 @@ def persist_vessel_submission(
 
 def create_test_session_factory() -> sessionmaker[Session]:
     """In-memory SQLite engine and session factory for integration tests."""
-    from vessel_valuation.db.connection import create_db_engine, create_session_factory
-
     engine = create_db_engine('sqlite://', for_tests=True)
     init_schema(engine)
     return create_session_factory(engine)

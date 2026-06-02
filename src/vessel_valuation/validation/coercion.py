@@ -1,7 +1,8 @@
 """Type coercion helpers — convert raw dict values to typed ``VesselInputs`` fields."""
 
 import dataclasses
-from datetime import date, datetime
+from datetime import date
+from datetime import datetime
 
 from vessel_valuation.mapping import vessel_inputs_from_coerced_kwargs
 from vessel_valuation.schema import VesselInputs
@@ -21,7 +22,7 @@ def to_float(raw: dict[str, object], key: str) -> float | None:
     if is_sentinel(v):
         return None
     try:
-        return float(v)  # type: ignore[arg-type]
+        return float(v)  # ty: ignore[invalid-argument-type]
     except (TypeError, ValueError):
         return None
 

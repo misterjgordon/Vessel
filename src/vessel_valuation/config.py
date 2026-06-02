@@ -10,14 +10,12 @@ Database URL behaviour
 use case:
 
 - **Runtime** (``get_database_url()``): ``sqlite:///:memory:`` — zero-config
-  fallback for tests and scripts. Unit and integration tests use SQLite
-  in-memory so CI does not require Postgres. Repository code stays
-  backend-agnostic; dialect differences live in migrations.
+  fallback for tests and scripts.
 - **Migrations** (``get_migration_database_url()``): ``sqlite:///vessel_valuation.db``
-  — file-backed SQLite so ``alembic upgrade`` persists schema between CLI runs
-  (an in-memory default would be discarded when the process exits).
-- **Dev / production**: set ``DATABASE_URL`` to PostgreSQL (see ``.env.example``),
-  e.g. via Docker Compose locally.
+  — file-backed SQLite so ``alembic upgrade`` persists schema between CLI runs.
+- **Dash app** (``get_app_database_url()``): same file default as migrations so
+  saved vessels persist across HTTP requests.
+- Override any of the above with ``DATABASE_URL`` (see ``.env.example``).
 """
 
 import os

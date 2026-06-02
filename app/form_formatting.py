@@ -1,6 +1,8 @@
 """Display and parse thousand-separated numbers in manual form fields."""
 
-from vessel_valuation.mapping import FormRawValue, VesselInputField, VesselInputFormRawDict
+from vessel_valuation.mapping import FormRawValue
+from vessel_valuation.mapping import VesselInputField
+from vessel_valuation.mapping import VesselInputFormRawDict
 
 # Whole-number fields shown with thousands separators (text inputs in the UI).
 COMMA_FORMATTED_FIELDS: frozenset[str] = frozenset(
@@ -54,7 +56,11 @@ def parse_display_number(value: str | int | float | None) -> int | float | None:
     if not cleaned:
         return None
 
-    parsed = float(cleaned)
+    try:
+        parsed = float(cleaned)
+    except ValueError:
+        return None
+
     if parsed.is_integer():
         return int(parsed)
     return parsed

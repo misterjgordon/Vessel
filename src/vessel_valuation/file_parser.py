@@ -32,21 +32,26 @@ Public API
 
 import io
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date
+from datetime import datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
+from typing import cast
 
 import numpy as np
 import pandas as pd
 
-from vessel_valuation.excel_reference import SAMPLE_DATA_SHEET, UPLOAD_HEADER_ALIASES
+from vessel_valuation.excel_reference import SAMPLE_DATA_SHEET
+from vessel_valuation.excel_reference import UPLOAD_HEADER_ALIASES
 from vessel_valuation.mapping import VESSEL_INPUT_FIELD_NAMES
-from vessel_valuation.schema import ValidationThresholds, VesselInputs
-from vessel_valuation.validation import (
-    median_pp_teu_factor,
-    tier2_warnings,
-    validate,
-    vessel_inputs_identity,
-)
+from vessel_valuation.validation import median_pp_teu_factor
+from vessel_valuation.validation import tier2_warnings
+from vessel_valuation.validation import validate
+from vessel_valuation.validation import vessel_inputs_identity
+
+if TYPE_CHECKING:
+    from vessel_valuation.schema import ValidationThresholds
+    from vessel_valuation.schema import VesselInputs
 
 REQUIRED_COLUMNS: frozenset[str] = frozenset(VESSEL_INPUT_FIELD_NAMES)
 
@@ -144,15 +149,20 @@ def _is_blank_row(row: dict[str, object]) -> bool:
     return True
 
 
+def _cell_is_missing(value: object) -> bool:
+    """Return True when a cell value is pandas-null (NA, NaN, NaT)."""
+    if value is None:
+        return True
+    try:
+        return bool(pd.isna(value))  # ty: ignore[no-matching-overload]
+    except (TypeError, ValueError):
+        return False
+
+
 def _coerce_cell_for_raw(value: object) -> object:
     """Coerce spreadsheet cell values to JSON-safe Python types for stores and validation."""
-    if value is None:
+    if _cell_is_missing(value):
         return None
-    try:
-        if pd.isna(value):  # type: ignore[arg-type]
-            return None
-    except (TypeError, ValueError):
-        pass
     if isinstance(value, pd.Timestamp):
         return value.date().isoformat()
     if isinstance(value, datetime):
@@ -194,12 +204,15 @@ def valid_inputs_from_upload_store(upload_store: dict[str, object]) -> list[Vess
         return []
     inputs: list[VesselInputs] = []
     for entry in rows:
-        if not isinstance(entry, dict) or entry.get('errors'):
+        if not isinstance(entry, dict):
             continue
-        raw = entry.get('raw')
+        row = cast('dict[str, object]', entry)
+        if row.get('errors'):
+            continue
+        raw = row.get('raw')
         if not isinstance(raw, dict):
             continue
-        result = validate(raw)
+        result = validate(cast('dict[str, object]', raw))
         if result.inputs is not None:
             inputs.append(result.inputs)
     return inputs
@@ -275,7 +288,9 @@ def parse_dataframe(
     # Pass 1 — Tier 1 validation per non-blank row (spreadsheet row numbers preserved)
     pass1: list[tuple[int, dict[str, object], list[str], VesselInputs | None]] = []
     for df_index in range(len(df_required)):
-        raw = _normalise_row(df_required.iloc[df_index].to_dict())
+        raw = _normalise_row(
+            cast('dict[str, object]', df_required.iloc[df_index].to_dict()),
+        )
         if _is_blank_row(raw):
             continue
         row_num = df_index + 2

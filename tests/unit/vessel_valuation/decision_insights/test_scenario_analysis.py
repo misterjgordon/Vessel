@@ -5,12 +5,11 @@ uv run --extra dev pytest tests/unit/vessel_valuation/decision_insights/test_sce
 
 import pytest
 
-from vessel_valuation.decision_insights.scenario_analysis import (
-    DEFAULT_SCENARIO_BUNDLES,
-    scenario_returns,
-)
 from vessel_valuation.dcf import compute_npv_irr
-from vessel_valuation.schema import ScenarioBundle, VesselInputs
+from vessel_valuation.decision_insights.scenario_analysis import DEFAULT_SCENARIO_BUNDLES
+from vessel_valuation.decision_insights.scenario_analysis import scenario_returns
+from vessel_valuation.schema import ScenarioBundle
+from vessel_valuation.schema import VesselInputs
 
 
 def test_scenario_returns_three_default_bundles(base_inputs: VesselInputs) -> None:

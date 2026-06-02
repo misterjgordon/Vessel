@@ -4,7 +4,7 @@
 
 Single-vessel DCF model aligned to the case-study Excel workbook: Year 0 purchase, annual operating cash flows with inflation on costs only, drydock on a fixed frequency, residual in the final year. The Python engine is covered by golden NPV/IRR tests against the reference file.
 
-Inputs arrive via manual form or tabular upload (CSV/Excel). Two-tier validation separates blocking data errors (Tier 1) from advisory business rules (Tier 2). Valid runs persist to SQLite/Postgres through a bronze → silver → gold path; the Dash UI calls validation, `enrich()`, and the repository only—no formulas in the app layer.
+Inputs arrive via manual form or tabular upload (CSV/Excel). Two-tier validation separates blocking data errors (Tier 1) from advisory business rules (Tier 2). Valid runs persist to SQLite through a bronze → silver → gold path; the Dash UI calls validation, `enrich()`, and the repository only—no formulas in the app layer.
 
 ## Insights for investment decisions
 

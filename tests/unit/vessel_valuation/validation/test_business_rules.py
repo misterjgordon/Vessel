@@ -6,11 +6,9 @@ from tests.unit.vessel_valuation.validation.conftest import raw
 from vessel_valuation.case_study_benchmarks import load_case_study_pp_teu_benchmarks
 from vessel_valuation.schema import ValidationThresholds
 from vessel_valuation.validation import validate
-from vessel_valuation.validation.business_rules import (
-    BUSINESS_RULES,
-    TEU_BUCKET_ROUNDING,
-    nearest_teu_bucket,
-)
+from vessel_valuation.validation.business_rules import BUSINESS_RULES
+from vessel_valuation.validation.business_rules import TEU_BUCKET_ROUNDING
+from vessel_valuation.validation.business_rules import nearest_teu_bucket
 
 
 def test_residual_exceeds_purchase_price_triggers_warning() -> None:

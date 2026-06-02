@@ -5,14 +5,12 @@ from datetime import date
 
 import pytest
 
-from vessel_valuation.mapping import (
-    VESSEL_INPUT_FIELD_NAMES,
-    VesselInputField,
-    vessel_inputs_from_dict,
-    vessel_inputs_from_object,
-    vessel_inputs_to_dict,
-    vessel_inputs_to_form_raw_dict,
-)
+from vessel_valuation.mapping import VESSEL_INPUT_FIELD_NAMES
+from vessel_valuation.mapping import VesselInputField
+from vessel_valuation.mapping import vessel_inputs_from_dict
+from vessel_valuation.mapping import vessel_inputs_from_object
+from vessel_valuation.mapping import vessel_inputs_to_dict
+from vessel_valuation.mapping import vessel_inputs_to_form_raw_dict
 from vessel_valuation.schema import VesselInputs
 
 

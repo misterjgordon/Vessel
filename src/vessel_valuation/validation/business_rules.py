@@ -12,12 +12,11 @@ import statistics
 from datetime import date
 
 from vessel_valuation.case_study_benchmarks import load_case_study_pp_teu_benchmarks
-from vessel_valuation.schema import (
-    DEFAULT_VALIDATION_THRESHOLDS,
-    ValidationThresholds,
-    VesselInputs,
-)
-from vessel_valuation.validation.types import BusinessRule, RuleContext
+from vessel_valuation.schema import DEFAULT_VALIDATION_THRESHOLDS
+from vessel_valuation.schema import ValidationThresholds
+from vessel_valuation.schema import VesselInputs
+from vessel_valuation.validation.types import BusinessRule
+from vessel_valuation.validation.types import RuleContext
 
 # Purchase-price÷TEU ratio defaults — medians from case-study sample sheet (see data/*.json).
 _CASE_STUDY_PP_TEU_BENCHMARKS: dict[int, float] = load_case_study_pp_teu_benchmarks()

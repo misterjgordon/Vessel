@@ -55,9 +55,8 @@ The following rules ALWAYS apply when working with python code.
 ## Linting & Type Checking
 After completing changes, run linting and type checking:
 ```bash
-make lint                              # ruff check + format check
-make format                            # auto-format with ruff
-uv run pyright src tests               # type check
+make lint    # ruff check --fix + ty check
+make format  # autopep8, ruff fix, ty check (fails on ty warnings)
 ```
 
 - Both ERRORS and WARNINGS must ALWAYS be fixed. no exceptions. ever.

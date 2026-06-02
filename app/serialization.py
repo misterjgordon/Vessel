@@ -1,31 +1,27 @@
 """Serialize domain objects for ``dcc.Store`` (JSON-safe dicts)."""
 
-from app.form_formatting import (
-    COMMA_FORMATTED_FIELDS,
-    format_form_values_for_display,
-    parse_display_number,
-)
-from vessel_valuation.mapping import (
-    FormRawValue,
-    VesselInputFormRawDict,
-    vessel_inputs_from_dict,
-    vessel_inputs_to_dict,
-    vessel_inputs_to_form_raw_dict,
-)
-from vessel_valuation.schema import (
-    CashflowYear,
-    ScenarioResult,
-    SensitivityPoint,
-    ValuationResult,
-    VesselInputs,
-)
-from vessel_valuation.serialize import (
-    cashflow_year_from_json,
-    cashflow_year_to_json,
-    scenario_result_from_json,
-    sensitivity_points_from_json,
-    valuation_summary_to_json,
-)
+from typing import TYPE_CHECKING
+
+from app.form_formatting import COMMA_FORMATTED_FIELDS
+from app.form_formatting import format_form_values_for_display
+from app.form_formatting import parse_display_number
+from vessel_valuation.mapping import FormRawValue
+from vessel_valuation.mapping import VesselInputFormRawDict
+from vessel_valuation.mapping import vessel_inputs_from_dict
+from vessel_valuation.mapping import vessel_inputs_to_dict
+from vessel_valuation.mapping import vessel_inputs_to_form_raw_dict
+from vessel_valuation.serialize import cashflow_year_from_json
+from vessel_valuation.serialize import cashflow_year_to_json
+from vessel_valuation.serialize import scenario_result_from_json
+from vessel_valuation.serialize import sensitivity_points_from_json
+from vessel_valuation.serialize import valuation_summary_to_json
+
+if TYPE_CHECKING:
+    from vessel_valuation.schema import CashflowYear
+    from vessel_valuation.schema import ScenarioResult
+    from vessel_valuation.schema import SensitivityPoint
+    from vessel_valuation.schema import ValuationResult
+    from vessel_valuation.schema import VesselInputs
 
 
 def form_values_to_raw(form: dict[str, FormRawValue]) -> dict[str, object]:

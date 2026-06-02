@@ -1,4 +1,5 @@
 __pycache__/
+*.egg-info/
 *.py[cod]
 .venv/
 .env
@@ -6,5 +7,6 @@ __pycache__/
 !.env.example
 .pytest_cache/
 .ruff_cache/
+vessel_valuation.db
 .DS_Store
 docs/case_study/~$*

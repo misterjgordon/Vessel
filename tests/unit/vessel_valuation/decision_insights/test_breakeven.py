@@ -4,12 +4,16 @@ uv run --extra dev pytest tests/unit/vessel_valuation/decision_insights/test_bre
 """
 
 import dataclasses
+from typing import TYPE_CHECKING
 
 import pytest
 
+from vessel_valuation.dcf import build_schedule
+from vessel_valuation.dcf import calculate_npv
 from vessel_valuation.decision_insights.breakeven import breakeven_revenue
-from vessel_valuation.dcf import build_schedule, calculate_npv
-from vessel_valuation.schema import VesselInputs
+
+if TYPE_CHECKING:
+    from vessel_valuation.schema import VesselInputs
 
 
 def test_breakeven_returns_float_for_viable_vessel(base_inputs: VesselInputs) -> None:

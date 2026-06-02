@@ -8,7 +8,9 @@ Examples: required fields, Excel sentinels (``#VALUE!``), numeric coercibility,
 rate bounds, ``days_of_year == 365``.
 """
 
-from vessel_valuation.validation.coercion import to_date, to_float, to_int
+from vessel_valuation.validation.coercion import to_date
+from vessel_valuation.validation.coercion import to_float
+from vessel_valuation.validation.coercion import to_int
 from vessel_valuation.validation.types import RawRule
 
 

@@ -1,14 +1,25 @@
 """View 1 — investment summary (inputs, results, sensitivity, scenarios)."""
 
-from dash import dash_table, dcc, html
+from typing import TYPE_CHECKING
+
+from dash import dash_table
+from dash import dcc
+from dash import html
+from dash.dash_table.Format import Format
+from dash.dash_table.Format import Scheme
 
 from app import component_ids as cid
 from app.form_defaults import FORM_DEFAULTS
-from app.form_formatting import format_form_field_value, form_field_input_type
-from vessel_valuation.db.repository import VesselInputSummary
-from vessel_valuation.serialize import json_float
+from app.form_formatting import form_field_input_type
+from app.form_formatting import format_form_field_value
 from vessel_valuation.decision_insights.scenario_analysis import DEFAULT_SCENARIO_BUNDLES
-from vessel_valuation.file_parser import ACCEPTED_UPLOAD_EXTENSIONS, REQUIRED_COLUMNS
+from vessel_valuation.file_parser import ACCEPTED_UPLOAD_EXTENSIONS
+from vessel_valuation.file_parser import REQUIRED_COLUMNS
+from vessel_valuation.serialize import json_float
+
+if TYPE_CHECKING:
+    from vessel_valuation.db.repository import VesselInputSummary
+    from vessel_valuation.schema import ScenarioBundle
 
 _FORM_SPECS: tuple[tuple[str, str, str], ...] = (
     ('vessel_name', 'Vessel name', cid.INPUT_VESSEL_NAME),
@@ -334,21 +345,26 @@ def investment_view() -> html.Div:
             html.Hr(),
             html.H3('Scenarios'),
             html.P(
-                'Fixed Best / Base / Worst bundles (macro inflation and discount rates).',
+                'Edit inflation and discount rates for Best / Base / Worst, then click '
+                'Calculate valuation to refresh scenario NPV and IRR.',
                 className='help-text',
             ),
             dash_table.DataTable(
                 id=cid.TABLE_SCENARIOS,
-                columns=scenario_table_columns(),  # pyright: ignore[reportArgumentType]
-                data=scenario_table_rows(),
+                columns=scenario_table_columns(),  # ty: ignore[invalid-argument-type]
+                data=scenario_table_rows(),  # ty: ignore[invalid-argument-type]
+                editable=True,
                 style_table={'overflowX': 'auto'},
                 style_cell={
                     'textAlign': 'right',
                     'padding': '6px',
                     'fontFamily': 'system-ui, sans-serif',
                 },
-                style_cell_conditional=[
-                    {'if': {'column_id': 'scenario'}, 'textAlign': 'left'},
+                style_cell_conditional=[  # ty: ignore[invalid-argument-type]
+                    {
+                        'if': {'column_id': 'scenario'},
+                        'textAlign': 'left',  # ty: ignore[invalid-key]
+                    },
                 ],
                 style_header={'fontWeight': 'bold', 'fontFamily': 'system-ui, sans-serif'},
             ),
@@ -392,7 +408,7 @@ def _manual_form() -> html.Div:
                     html.Label(label),
                     dcc.Input(
                         id=component_id,
-                        type=input_type,
+                        type=input_type,  # ty: ignore[invalid-argument-type]
                         value=default,
                         step=step,
                     ),
@@ -403,10 +419,8 @@ def _manual_form() -> html.Div:
     return html.Div(children, className='form-grid')
 
 
-def dash_table_placeholder():
+def dash_table_placeholder() -> dash_table.DataTable:
     """Upload table: file values plus validation status and messages."""
-    from dash import dash_table
-
     return dash_table.DataTable(
         id=cid.UPLOAD_SUMMARY_TABLE,
         columns=[
@@ -423,19 +437,19 @@ def dash_table_placeholder():
         style_table={'overflowX': 'auto'},
         style_cell={'textAlign': 'left', 'padding': '6px'},
         style_header={'fontWeight': 'bold'},
-        style_data_conditional=[  # pyright: ignore[reportArgumentType]
+        style_data_conditional=[  # ty: ignore[invalid-argument-type]
             {
                 'if': {'state': 'selected'},
-                'backgroundColor': '#dbeafe',
-                'border': '1px solid #2563eb',
+                'backgroundColor': '#dbeafe',  # ty: ignore[invalid-key]
+                'border': '1px solid #2563eb',  # ty: ignore[invalid-key]
             },
             {
                 'if': {'filter_query': '{status} = error'},
-                'backgroundColor': '#fee2e2',
+                'backgroundColor': '#fee2e2',  # ty: ignore[invalid-key]
             },
             {
                 'if': {'filter_query': '{status} = warning'},
-                'backgroundColor': '#fef9c3',
+                'backgroundColor': '#fef9c3',  # ty: ignore[invalid-key]
             },
         ],
     )
@@ -481,24 +495,41 @@ def format_signal_label(signal: str) -> str:
     return labels.get(signal, signal)
 
 
-def scenario_table_columns() -> list[dict[str, str]]:
+_PERCENT_FORMAT = Format(precision=2, scheme=Scheme.percentage)
+
+
+def scenario_table_columns() -> list[dict[str, object]]:
     """Return DataTable column definitions for Best / Base / Worst scenarios."""
     return [
-        {'name': 'Scenario', 'id': 'scenario'},
-        {'name': 'Inflation', 'id': 'inflation'},
-        {'name': 'Discount', 'id': 'discount'},
-        {'name': 'NPV', 'id': 'npv'},
-        {'name': 'IRR', 'id': 'irr'},
-        {'name': 'Signal', 'id': 'signal'},
+        {'name': 'Scenario', 'id': 'scenario', 'editable': False},
+        {
+            'name': 'Inflation',
+            'id': 'inflation_rate',
+            'editable': True,
+            'type': 'numeric',
+            'format': _PERCENT_FORMAT,
+        },
+        {
+            'name': 'Discount',
+            'id': 'discount_rate',
+            'editable': True,
+            'type': 'numeric',
+            'format': _PERCENT_FORMAT,
+        },
+        {'name': 'NPV', 'id': 'npv', 'editable': False},
+        {'name': 'IRR', 'id': 'irr', 'editable': False},
+        {'name': 'Signal', 'id': 'signal', 'editable': False},
     ]
 
 
 def scenario_table_rows(
     scenarios: dict[str, dict[str, object]] | None = None,
-) -> list[dict[str, str]]:
+    bundles: list[ScenarioBundle] | None = None,
+) -> list[dict[str, object]]:
     """Build scenario table rows with rate assumptions and optional valuation results."""
-    rows: list[dict[str, str]] = []
-    for bundle in DEFAULT_SCENARIO_BUNDLES:
+    active_bundles = bundles if bundles is not None else list(DEFAULT_SCENARIO_BUNDLES)
+    rows: list[dict[str, object]] = []
+    for bundle in active_bundles:
         result = scenarios.get(bundle.name) if scenarios else None
         if result is not None:
             assert isinstance(result, dict)
@@ -511,8 +542,8 @@ def scenario_table_rows(
         rows.append(
             {
                 'scenario': bundle.name,
-                'inflation': f'{bundle.inflation_rate:.0%}',
-                'discount': f'{bundle.discount_rate:.0%}',
+                'inflation_rate': bundle.inflation_rate,
+                'discount_rate': bundle.discount_rate,
                 'npv': npv_cell,
                 'irr': irr_cell,
                 'signal': signal_cell,

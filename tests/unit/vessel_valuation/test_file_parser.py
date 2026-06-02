@@ -6,17 +6,21 @@ uv run --extra dev pytest tests/unit/vessel_valuation/test_file_parser.py -v
 import io
 import json
 from pathlib import Path
+from typing import TYPE_CHECKING
+from typing import cast
 
 import pandas as pd
 
 from vessel_valuation.excel_reference import load_sample_vessels
-from vessel_valuation.file_parser import (
-    REQUIRED_COLUMNS,
-    parse_dataframe,
-    parse_upload,
-)
-from vessel_valuation.schema import VesselInputs
+from vessel_valuation.file_parser import REQUIRED_COLUMNS
+from vessel_valuation.file_parser import parse_dataframe
+from vessel_valuation.file_parser import parse_upload
+from vessel_valuation.mapping import VESSEL_INPUT_FIELD_NAMES
+from vessel_valuation.validation import median_pp_teu_factor
 from vessel_valuation.validation import validate
+
+if TYPE_CHECKING:
+    from vessel_valuation.schema import VesselInputs
 
 _VALID_ROW: dict[str, object] = {
     'vessel_name': 'Test Vessel',
@@ -56,8 +60,6 @@ def _xlsx_bytes(rows: list[dict[str, object]]) -> bytes:
 
 def test_required_columns_match_vessel_inputs_fields() -> None:
     """REQUIRED_COLUMNS matches every VesselInputs field name."""
-    from vessel_valuation.mapping import VESSEL_INPUT_FIELD_NAMES
-
     assert REQUIRED_COLUMNS == frozenset(VESSEL_INPUT_FIELD_NAMES)
 
 
@@ -90,7 +92,7 @@ def test_case_study_display_headers_are_mapped() -> None:
         'Engine': None,
         'CO2 Carbon Factor': None,
     }
-    result = parse_dataframe(_df([display_row]))
+    result = parse_dataframe(_df(cast('list[dict[str, object]]', [display_row])))
     assert result.ok, result.header_errors
     assert result.rows[0].ok
     assert result.rows[0].inputs is not None
@@ -103,7 +105,7 @@ def test_missing_display_header_maps_to_missing_field_error() -> None:
         'Input Field': 'Test Vessel',
         'TEU Size': 10_000,
     }
-    result = parse_dataframe(_df([display_row]))
+    result = parse_dataframe(_df(cast('list[dict[str, object]]', [display_row])))
     assert not result.ok
     assert any('purchase_price' in err for err in result.header_errors)
 
@@ -191,8 +193,6 @@ def test_blank_rows_are_skipped() -> None:
 
 def test_parse_result_exposes_batch_pp_teu_factor_benchmarks() -> None:
     """batch_pp_teu_factor_benchmarks on ParseResult matches valid upload rows."""
-    from vessel_valuation.validation import median_pp_teu_factor
-
     rows = [dict(_VALID_ROW), dict(_VALID_ROW)]
     rows[1]['vessel_name'] = 'Second'
     result = parse_dataframe(_df(rows))

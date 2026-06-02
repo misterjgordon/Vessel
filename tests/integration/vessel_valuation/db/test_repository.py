@@ -6,42 +6,41 @@ uv run --extra dev pytest tests/integration/vessel_valuation/db/test_repository.
 
 from datetime import date
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 from sqlalchemy import select
-from sqlalchemy.orm import Session
 
 from tests.conftest import CASE_STUDY_XLSX
-from vessel_valuation.db.models import (
-    RawVesselSubmission,
-    VesselBenchmarkRow,
-    VesselCashflowYearRow,
-    VesselInputRow,
-    VesselValuationRow,
-)
-from vessel_valuation.db.repository import (
-    delete_vessel_input,
-    delete_vessel_inputs,
-    get_valuation,
-    get_vessel_inputs,
-    list_vessels,
-    load_pp_teu_factor_benchmarks,
-    lookup_purchase_price_benchmark,
-    persist_vessel_submission,
-    refresh_benchmarks,
-    save_raw_submission,
-    save_vessel_inputs,
-    save_valuation,
-)
+from vessel_valuation.db.models import RawVesselSubmission
+from vessel_valuation.db.models import VesselBenchmarkRow
+from vessel_valuation.db.models import VesselCashflowYearRow
+from vessel_valuation.db.models import VesselInputRow
+from vessel_valuation.db.models import VesselValuationRow
+from vessel_valuation.db.repository import delete_vessel_input
+from vessel_valuation.db.repository import delete_vessel_inputs
+from vessel_valuation.db.repository import get_valuation
+from vessel_valuation.db.repository import get_vessel_inputs
+from vessel_valuation.db.repository import list_vessels
+from vessel_valuation.db.repository import load_pp_teu_factor_benchmarks
+from vessel_valuation.db.repository import lookup_purchase_price_benchmark
+from vessel_valuation.db.repository import persist_vessel_submission
+from vessel_valuation.db.repository import refresh_benchmarks
+from vessel_valuation.db.repository import save_raw_submission
+from vessel_valuation.db.repository import save_valuation
+from vessel_valuation.db.repository import save_vessel_inputs
 from vessel_valuation.decision_insights.enrich import enrich
 from vessel_valuation.excel_reference import load_sample_vessels
 from vessel_valuation.file_parser import parse_dataframe
 from vessel_valuation.validation import validate
 
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
+
 _NEW_8000_TEU_PURCHASE_DATE = '2026-01-15'
 _OTHER_8000_TEU_PURCHASE_DATE = '2026-02-01'
 
-RAW_PAYLOAD = {
+RAW_PAYLOAD: dict[str, object] = {
     'vessel_name': 'Integration Test',
     'purchase_price': 100_000_000.0,
     'vessel_life': 25,

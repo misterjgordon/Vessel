@@ -3,10 +3,14 @@ Sensitivity analysis tests.
 uv run --extra dev pytest tests/unit/vessel_valuation/decision_insights/test_sensitivity.py -v
 """
 
+from typing import TYPE_CHECKING
+
 import pytest
 
 from vessel_valuation.decision_insights.sensitivity import sensitivity_analysis
-from vessel_valuation.schema import VesselInputs
+
+if TYPE_CHECKING:
+    from vessel_valuation.schema import VesselInputs
 
 
 def test_sensitivity_default_range_produces_11_points(base_inputs: VesselInputs) -> None:

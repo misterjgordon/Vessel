@@ -2,13 +2,13 @@
 
 import dataclasses
 
-from vessel_valuation.dcf import (
-    build_schedule,
-    calculate_irr,
-    calculate_npv,
-    investment_signal,
-)
-from vessel_valuation.schema import ScenarioBundle, ScenarioResult, VesselInputs
+from vessel_valuation.dcf import build_schedule
+from vessel_valuation.dcf import calculate_irr
+from vessel_valuation.dcf import calculate_npv
+from vessel_valuation.dcf import investment_signal
+from vessel_valuation.schema import ScenarioBundle
+from vessel_valuation.schema import ScenarioResult
+from vessel_valuation.schema import VesselInputs
 
 # Best/Base/Worst rates are paired so that the real return (discount − inflation)
 # stays constant at 2%, preventing economically inconsistent combinations (D-010).

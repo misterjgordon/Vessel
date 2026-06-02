@@ -1,13 +1,16 @@
 # Run: uv run --extra dev pytest tests/unit/vessel_valuation/validation/test_coercion.py -v
 """Tests for ``validation.coercion``."""
 
-from datetime import date, datetime
+from datetime import date
+from datetime import datetime
 
 import pytest
 
 from tests.unit.vessel_valuation.validation.conftest import raw
 from vessel_valuation.validation import validate
-from vessel_valuation.validation.coercion import coerce_inputs, is_sentinel, to_date
+from vessel_valuation.validation.coercion import coerce_inputs
+from vessel_valuation.validation.coercion import is_sentinel
+from vessel_valuation.validation.coercion import to_date
 
 
 @pytest.mark.parametrize('sentinel', ['#VALUE!', '-', '', None])

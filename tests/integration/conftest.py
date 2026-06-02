@@ -1,11 +1,15 @@
 """Integration test database fixtures."""
 
 from collections.abc import Generator
+from typing import TYPE_CHECKING
 
 import pytest
-from sqlalchemy.orm import Session, sessionmaker
 
 from vessel_valuation.db.repository import create_test_session_factory
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
+    from sqlalchemy.orm import sessionmaker
 
 
 @pytest.fixture
@@ -15,7 +19,7 @@ def session_factory() -> sessionmaker[Session]:
 
 
 @pytest.fixture
-def db_session(session_factory: sessionmaker[Session]) -> Generator[Session, None, None]:
+def db_session(session_factory: sessionmaker[Session]) -> Generator[Session]:
     """Transactional session rolled back after each test."""
     session = session_factory()
     try:

@@ -5,11 +5,9 @@ uv run --extra dev pytest tests/unit/vessel_valuation/test_excel_reference.py -v
 
 import pytest
 
-from vessel_valuation.excel_reference import (
-    load_sample_vessels,
-    read_basic_inputs,
-    read_basic_outputs,
-)
+from vessel_valuation.excel_reference import load_sample_vessels
+from vessel_valuation.excel_reference import read_basic_inputs
+from vessel_valuation.excel_reference import read_basic_outputs
 
 
 def test_case_study_assets_exist(case_study_xlsx, case_study_pdf) -> None:

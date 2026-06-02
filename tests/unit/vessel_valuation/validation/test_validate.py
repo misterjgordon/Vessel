@@ -1,7 +1,8 @@
 # Run: uv run --extra dev pytest tests/unit/vessel_valuation/validation/test_validate.py -v
 """Tests for ``validation.validate`` orchestration (``validation/__init__.py``)."""
 
-from tests.unit.vessel_valuation.validation.conftest import BASE_RAW, raw
+from tests.unit.vessel_valuation.validation.conftest import BASE_RAW
+from tests.unit.vessel_valuation.validation.conftest import raw
 from vessel_valuation.validation import validate
 
 

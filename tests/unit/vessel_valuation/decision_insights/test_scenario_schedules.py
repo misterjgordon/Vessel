@@ -1,15 +1,17 @@
 """
 Per-year scenario schedule tests.
-uv run --extra dev pytest tests/unit/vessel_valuation/decision_insights/test_scenario_schedules.py -v
+uv run --extra dev pytest tests/unit/vessel_valuation/decision_insights -k scenario_schedules -q
 """
 
-from vessel_valuation.decision_insights.scenario_analysis import DEFAULT_SCENARIO_BUNDLES
-from vessel_valuation.decision_insights.scenario_schedules import (
-    INPUTS_SCENARIO_NAME,
-    scenario_schedules,
-)
+from typing import TYPE_CHECKING
+
 from vessel_valuation.dcf import compute_npv_irr
-from vessel_valuation.schema import VesselInputs
+from vessel_valuation.decision_insights.scenario_analysis import DEFAULT_SCENARIO_BUNDLES
+from vessel_valuation.decision_insights.scenario_schedules import INPUTS_SCENARIO_NAME
+from vessel_valuation.decision_insights.scenario_schedules import scenario_schedules
+
+if TYPE_CHECKING:
+    from vessel_valuation.schema import VesselInputs
 
 
 def test_scenario_schedules_includes_inputs_and_three_bundles(

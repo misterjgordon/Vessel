@@ -1,31 +1,42 @@
 """Shared helpers for Dash callback wiring."""
 
+from typing import TYPE_CHECKING
+from typing import cast
+
 import plotly.graph_objects as go
-from dash import Output, no_update
-from sqlalchemy.orm import Session, sessionmaker
+from dash import Output
+from dash import no_update
 
 from app.form_defaults import FORM_DEFAULTS
 from app.form_formatting import format_form_field_value
-from app.serialization import (
-    schedules_from_store,
-    schedules_to_store,
-    valuation_to_store,
-    vessel_inputs_to_form_values,
-    vessel_inputs_to_store,
-)
-from vessel_valuation.mapping import VesselInputField
-from vessel_valuation.serialize import json_float
-from app.views.investment import (
-    FORM_COMPONENT_IDS,
-    FORM_FIELD_NAMES,
-    format_saved_vessel_option_label,
-)
+from app.serialization import schedules_from_store
+from app.serialization import schedules_to_store
+from app.serialization import valuation_to_store
+from app.serialization import vessel_inputs_to_form_values
+from app.serialization import vessel_inputs_to_store
+from app.views.investment import FORM_COMPONENT_IDS
+from app.views.investment import FORM_FIELD_NAMES
+from app.views.investment import format_saved_vessel_option_label
 from vessel_valuation.db.connection import session_scope
-from vessel_valuation.db.repository import get_vessel_inputs, list_fleet_vessel_inputs, list_vessels
+from vessel_valuation.db.repository import get_vessel_inputs
+from vessel_valuation.db.repository import list_fleet_vessel_inputs
+from vessel_valuation.db.repository import list_vessels
 from vessel_valuation.decision_insights.scenario_schedules import scenario_schedules
 from vessel_valuation.file_parser import pp_teu_factor_benchmarks_for_subject
-from vessel_valuation.schema import CashflowYear, ValuationResult, VesselInputs
+from vessel_valuation.mapping import VesselInputField
+from vessel_valuation.serialize import json_float
+from vessel_valuation.serialize import scenario_bundles_from_json
+from vessel_valuation.serialize import scenario_bundles_to_json
 from vessel_valuation.validation import validate
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
+    from sqlalchemy.orm import sessionmaker
+
+    from vessel_valuation.schema import CashflowYear
+    from vessel_valuation.schema import ScenarioBundle
+    from vessel_valuation.schema import ValuationResult
+    from vessel_valuation.schema import VesselInputs
 
 LOAD_FORM_OUTPUTS = [Output(component_id, 'value') for component_id in FORM_COMPONENT_IDS]
 LOAD_FORM_OUTPUTS_DUPLICATE = [
@@ -73,7 +84,9 @@ def calculation_schedules(
     if compute_store is not None and 'schedules' in compute_store:
         schedules_raw = compute_store['schedules']
         if isinstance(schedules_raw, dict):
-            schedules = schedules_from_store(schedules_raw)  # type: ignore[arg-type]
+            schedules = schedules_from_store(
+                cast('dict[str, list[dict[str, object]]]', schedules_raw),
+            )
             vessel_input_id = compute_store.get('vessel_input_id')
             if isinstance(vessel_input_id, int):
                 return schedules, (
@@ -94,11 +107,23 @@ def form_values_tuple(inputs: VesselInputs) -> tuple[str | int | float | None, .
     return tuple(form_values[VesselInputField(name)] for name in FORM_FIELD_NAMES)
 
 
+def _scenario_bundles_from_compute_store(
+    compute_store: dict[str, object] | None,
+) -> list[ScenarioBundle] | None:
+    if compute_store is None:
+        return None
+    bundles_raw = compute_store.get('scenario_bundles')
+    if not isinstance(bundles_raw, list):
+        return None
+    return scenario_bundles_from_json(cast('list[dict[str, object]]', bundles_raw))
+
+
 def build_compute_store(
     *,
     inputs: VesselInputs,
     result: ValuationResult,
     schedules: dict[str, list[CashflowYear]],
+    scenario_bundles: list[ScenarioBundle],
     warnings: list[str],
     raw_payload: dict[str, object],
     source: str,
@@ -111,6 +136,7 @@ def build_compute_store(
         'inputs': vessel_inputs_to_store(inputs),
         'valuation': valuation_to_store(result),
         'schedules': schedules_to_store(schedules),
+        'scenario_bundles': scenario_bundles_to_json(scenario_bundles),
         'warnings': warnings,
         'vessel_input_id': vessel_input_id,
     }
@@ -120,6 +146,7 @@ def build_compute_store(
             'source': source,
             'rev_min': rev_min,
             'rev_max': rev_max,
+            'scenario_bundles': scenario_bundles_to_json(scenario_bundles),
         }
     return store_data
 
@@ -158,10 +185,11 @@ def raw_from_upload_store(
     for entry in rows:
         if not isinstance(entry, dict):
             continue
-        if entry.get('row_number') == row_number and not entry.get('errors'):
-            raw = entry.get('raw')
+        row = cast('dict[str, object]', entry)
+        if row.get('row_number') == row_number and not row.get('errors'):
+            raw = row.get('raw')
             if isinstance(raw, dict):
-                return raw
+                return cast('dict[str, object]', raw)
     return None
 
 

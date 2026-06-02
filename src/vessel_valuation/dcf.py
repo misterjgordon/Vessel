@@ -1,15 +1,14 @@
 """DCF valuation engine for single-vessel investment analysis."""
 
 from datetime import date
+from typing import cast
 
 from scipy.optimize import brentq
 
-from vessel_valuation.schema import (
-    SIGNAL_BAND,
-    CashflowYear,
-    DcfResult,
-    VesselInputs,
-)
+from vessel_valuation.schema import SIGNAL_BAND
+from vessel_valuation.schema import CashflowYear
+from vessel_valuation.schema import DcfResult
+from vessel_valuation.schema import VesselInputs
 
 
 def _year_end(base_year: int, t: int) -> date:
@@ -126,10 +125,8 @@ def calculate_irr(net_cashflows: list[float]) -> float | None:
         return sum(cf / (1 + r) ** t for t, cf in enumerate(net_cashflows))
 
     try:
-        # scipy brentq stubs don't carry the full_output=False overload, so
-        # the return type is unresolved; cast explicitly to Python float.
-        root = brentq(_npv, -0.99, 9.99)
-        return float(root)  # type: ignore[arg-type]
+        # brentq stubs omit full_output=False; root is not narrowed to float.
+        return float(cast('float', brentq(_npv, -0.99, 9.99)))
     except ValueError:
         return None
 

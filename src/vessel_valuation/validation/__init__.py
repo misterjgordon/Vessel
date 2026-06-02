@@ -9,25 +9,25 @@ Structural validation collects type and presence errors that prevent
 computation. Business rules produce advisory warnings the user may override.
 """
 
-from vessel_valuation.schema import ValidationThresholds
-from vessel_valuation.validation.business_rules import (
-    TEU_BUCKET_ROUNDING as TEU_BUCKET_ROUNDING,
-    business_rule_warnings,
-    format_pp_teu_ratio as format_pp_teu_ratio,
-    median_pp_teu_factor as median_pp_teu_factor,
-    nearest_teu_bucket as nearest_teu_bucket,
-    pp_teu_factor as pp_teu_factor,
-    vessel_inputs_identity as vessel_inputs_identity,
-)
+from typing import TYPE_CHECKING
+
+from vessel_valuation.validation.business_rules import TEU_BUCKET_ROUNDING as TEU_BUCKET_ROUNDING
+from vessel_valuation.validation.business_rules import business_rule_warnings
+from vessel_valuation.validation.business_rules import format_pp_teu_ratio as format_pp_teu_ratio
+from vessel_valuation.validation.business_rules import median_pp_teu_factor as median_pp_teu_factor
+from vessel_valuation.validation.business_rules import nearest_teu_bucket as nearest_teu_bucket
+from vessel_valuation.validation.business_rules import pp_teu_factor as pp_teu_factor
+from vessel_valuation.validation.business_rules import vessel_inputs_identity as vessel_inputs_identity
 from vessel_valuation.validation.coercion import coerce_inputs
 from vessel_valuation.validation.structural_rules import STRUCTURAL_RULES
-from vessel_valuation.validation.types import (
-    BusinessRule as BusinessRule,
-    RawRule as RawRule,
-    RuleContext as RuleContext,
-    SENTINELS as SENTINELS,
-    ValidationResult,
-)
+from vessel_valuation.validation.types import SENTINELS as SENTINELS
+from vessel_valuation.validation.types import BusinessRule as BusinessRule
+from vessel_valuation.validation.types import RawRule as RawRule
+from vessel_valuation.validation.types import RuleContext as RuleContext
+from vessel_valuation.validation.types import ValidationResult
+
+if TYPE_CHECKING:
+    from vessel_valuation.schema import ValidationThresholds
 
 
 def validate(

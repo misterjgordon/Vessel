@@ -18,12 +18,11 @@ Callers
 import dataclasses
 from datetime import date
 
-from vessel_valuation.schema import (
-    CashflowYear,
-    ScenarioResult,
-    SensitivityPoint,
-    ValuationResult,
-)
+from vessel_valuation.schema import CashflowYear
+from vessel_valuation.schema import ScenarioBundle
+from vessel_valuation.schema import ScenarioResult
+from vessel_valuation.schema import SensitivityPoint
+from vessel_valuation.schema import ValuationResult
 
 _CASHFLOW_YEAR_FIELDS = dataclasses.fields(CashflowYear)
 
@@ -119,6 +118,38 @@ def scenarios_from_json(
     if not payload:
         return {}
     return {name: scenario_result_from_json(data) for name, data in payload.items()}
+
+
+def scenario_bundle_to_json(bundle: ScenarioBundle) -> dict[str, object]:
+    """Serialize one scenario rate bundle for ``dcc.Store``."""
+    return {
+        'name': bundle.name,
+        'inflation_rate': bundle.inflation_rate,
+        'discount_rate': bundle.discount_rate,
+    }
+
+
+def scenario_bundles_to_json(bundles: list[ScenarioBundle]) -> list[dict[str, object]]:
+    """Serialize scenario bundles for ``dcc.Store``."""
+    return [scenario_bundle_to_json(bundle) for bundle in bundles]
+
+
+def scenario_bundles_from_json(
+    payload: list[dict[str, object]] | None,
+) -> list[ScenarioBundle] | None:
+    """Deserialize scenario bundles from ``dcc.Store``."""
+    if not payload:
+        return None
+    bundles: list[ScenarioBundle] = []
+    for entry in payload:
+        bundles.append(
+            ScenarioBundle(
+                name=str(entry['name']),
+                inflation_rate=json_float(entry['inflation_rate'], 'inflation_rate'),
+                discount_rate=json_float(entry['discount_rate'], 'discount_rate'),
+            )
+        )
+    return bundles
 
 
 def cashflow_year_to_json(row: CashflowYear) -> dict[str, object]:

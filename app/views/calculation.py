@@ -1,13 +1,18 @@
 """View 2 — year-by-year cashflow table (presentation / pivot only)."""
 
 from datetime import date
+from typing import TYPE_CHECKING
 
 import plotly.graph_objects as go
-from dash import dash_table, dcc, html
+from dash import dash_table
+from dash import dcc
+from dash import html
 
 from app import component_ids as cid
 from vessel_valuation.decision_insights.scenario_schedules import INPUTS_SCENARIO_NAME
-from vessel_valuation.schema import CashflowYear
+
+if TYPE_CHECKING:
+    from vessel_valuation.schema import CashflowYear
 
 _LINE_ITEMS: tuple[tuple[str, str], ...] = (
     ('revenue', 'Revenue'),
@@ -72,7 +77,7 @@ def calculation_view() -> html.Div:
             html.Div(id=cid.CALCULATION_PLACEHOLDER, className='placeholder'),
             dash_table.DataTable(
                 id=cid.TABLE_CASHFLOW,
-                columns=empty_dcf_columns(),  # pyright: ignore[reportArgumentType]
+                columns=empty_dcf_columns(),  # ty: ignore[invalid-argument-type]
                 data=[],
                 page_size=30,
                 style_table={'overflowX': 'auto'},
