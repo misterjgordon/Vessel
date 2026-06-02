@@ -28,7 +28,6 @@ Or with Make: `make dev` (install: `make install` or `make start` to install and
 ## Case study assets
 
 - `docs/case_study/` — instructions (PDF) and reference model (xlsx)
-- `data/source/` — copy of the model workbook for scripts/tests
 
 ## Tests
 
