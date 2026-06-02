@@ -3,6 +3,11 @@
 TAB_INVESTMENT = 'tab-investment'
 TAB_CALCULATION = 'tab-calculation'
 
+APP_TABS = 'app-tabs'
+TAB_VALUE_INVESTMENT = 'investment'
+TAB_VALUE_CALCULATION = 'calculation'
+TAB_VALUE_COMPARE = 'compare'
+
 STORE_COMPUTE = 'store-compute'
 STORE_UPLOAD = 'store-upload'
 

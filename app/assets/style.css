@@ -10,6 +10,8 @@
 .app-root .dash-table-container .dash-spreadsheet-container table,
 .app-root .dash-table-container .column-header-name {
   font-family: inherit;
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .app-header {
@@ -305,10 +307,6 @@
 .calculation-vessel-select {
   margin-bottom: 1rem;
   max-width: 420px;
-}
-
-.view-calculation .dash-table-container td:first-child {
-  text-align: left;
 }
 
 .upload-selection-label {

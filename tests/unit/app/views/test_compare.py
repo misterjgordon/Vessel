@@ -65,9 +65,13 @@ def test_build_compare_schedule_rows_aligns_mismatched_lives() -> None:
 
     rows = build_compare_schedule_rows(vessels, 'free_cashflow')
 
-    assert [row['year'] for row in rows] == [0, 1, 2]
-    assert rows[1]['delta'] == '$10'
-    assert rows[2]['vessel_1'] == '$0'
+    assert [row['year'] for row in rows] == [0, 0, 0, 1, 1, 1, 2, 2, 2]
+    delta_row = next(
+        row for row in rows if row['vessel'] == 'Delta (first − second)' and row['year'] == 1
+    )
+    assert delta_row['amount'] == '$10'
+    beta_year_two = next(row for row in rows if row['vessel'] == 'Beta' and row['year'] == 2)
+    assert beta_year_two['amount'] == '$5'
 
 
 def test_build_compare_schedule_rows_uses_selected_metric() -> None:
@@ -77,7 +81,8 @@ def test_build_compare_schedule_rows_uses_selected_metric() -> None:
 
     rows = build_compare_schedule_rows(vessels, 'revenue')
 
-    assert rows[0]['vessel_3'] == '$50.0k'
+    assert rows[0]['vessel'] == 'Gamma'
+    assert rows[0]['amount'] == '$50.0k'
 
 
 def test_validate_compare_metric_falls_back_to_default() -> None:

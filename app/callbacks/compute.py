@@ -9,10 +9,8 @@ from dash.dependencies import Output
 from dash.dependencies import State
 
 from app import component_ids as cid
-from app.callbacks._helpers import FORM_NO_UPDATES
-from app.callbacks._helpers import LOAD_FORM_OUTPUTS
+from app.callbacks._debug_log import agent_debug_log
 from app.callbacks._helpers import build_compute_store
-from app.callbacks._helpers import form_values_tuple
 from app.callbacks._helpers import optional_float
 from app.serialization import form_values_to_raw
 from app.views.investment import collect_form_values
@@ -36,7 +34,6 @@ def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
         Output(cid.STORE_COMPUTE, 'data'),
         Output(cid.BANNER_VALIDATION, 'children'),
         Output(cid.BANNER_VALIDATION, 'className'),
-        *LOAD_FORM_OUTPUTS,
         Input(cid.BTN_CALCULATE, 'n_clicks'),
         State(cid.INPUT_REV_MIN, 'value'),
         State(cid.INPUT_REV_MAX, 'value'),
@@ -68,10 +65,19 @@ def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
         rev_max: float | None,
         scenario_table_data: list[dict[str, object]] | None,
         *form_values: str | int | float | None,
-    ) -> tuple[object, ...]:
+    ) -> tuple[object, object, object]:
         """Validate inputs, enrich in memory, and store results for both views."""
+        # region agent log
+        agent_debug_log(
+            location='compute.py:on_calculate:entry',
+            message='on_calculate invoked',
+            data={'n_clicks': n_clicks, 'scenario_rows': len(scenario_table_data or [])},
+            hypothesis_id='H6',
+            run_id='post-fix',
+        )
+        # endregion
         if not n_clicks:
-            return (no_update, no_update, no_update, *FORM_NO_UPDATES)
+            return no_update, no_update, no_update
 
         form = collect_form_values(*form_values)
         raw_payload = form_values_to_raw(form)
@@ -82,14 +88,14 @@ def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
         try:
             scenario_bundles, scenario_warnings = resolve_scenario_bundles(scenario_table_data)
         except ValueError as exc:
-            return no_update, str(exc), 'validation-banner error', *FORM_NO_UPDATES
+            return no_update, str(exc), 'validation-banner error'
 
         with session_scope(session_factory) as session:
             fleet_peers = list_fleet_vessel_inputs(session)
             validation = validate(raw_payload)
             if validation.inputs is None:
                 message = '; '.join(validation.errors) if validation.errors else 'Validation failed'
-                return no_update, message, 'validation-banner error', *FORM_NO_UPDATES
+                return no_update, message, 'validation-banner error'
 
             factor_benchmarks = pp_teu_factor_benchmarks_for_subject(
                 fleet_peers,
@@ -124,7 +130,6 @@ def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
             rev_max=rev_max_val,
         )
 
-        form_tuple = form_values_tuple(inputs)
         banner_class = 'validation-banner warning' if warnings else 'validation-banner ok'
         if warnings:
             banner_text = (
@@ -136,4 +141,13 @@ def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
                 f'Valuation computed for {inputs.vessel_name}. '
                 'Click Save to database to persist for Compare.'
             )
-        return store_data, banner_text, banner_class, *form_tuple
+        # region agent log
+        agent_debug_log(
+            location='compute.py:on_calculate:success',
+            message='on_calculate returning store and banner only',
+            data={'has_valuation': 'valuation' in store_data},
+            hypothesis_id='H6',
+            run_id='post-fix',
+        )
+        # endregion
+        return store_data, banner_text, banner_class

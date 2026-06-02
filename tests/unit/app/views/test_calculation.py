@@ -3,7 +3,7 @@
 from datetime import date
 
 from app.views.calculation import build_cashflow_chart_figure
-from app.views.calculation import schedule_to_dcf_table
+from app.views.calculation import schedule_to_long_table
 from vessel_valuation.schema import CashflowYear
 
 
@@ -23,18 +23,17 @@ def _cashflow_year(year: int, revenue: float) -> CashflowYear:
     )
 
 
-def test_schedule_to_dcf_table_pivots_periods_as_columns() -> None:
-    """Line items are rows and period-end dates are column headers."""
+def test_schedule_to_long_table_lists_each_line_item_and_period() -> None:
+    """Each line item and period end is its own row with a formatted amount."""
     schedule = [_cashflow_year(0, 100.0), _cashflow_year(1, 200.0)]
 
-    columns, rows = schedule_to_dcf_table(schedule)
+    rows = schedule_to_long_table(schedule)
 
-    assert columns[0]['id'] == 'line_item'
-    assert [col['id'] for col in columns[1:]] == ['2025-12-31', '2026-12-31']
-    assert columns[1]['name'] == '31 Dec 2025'
-    revenue_row = next(row for row in rows if row['line_item'] == 'Revenue')
-    assert revenue_row['2025-12-31'] == '$100'
-    assert revenue_row['2026-12-31'] == '$200'
+    revenue_rows = [row for row in rows if row['line_item'] == 'Revenue']
+    assert len(revenue_rows) == 2
+    assert revenue_rows[0]['period_end'] == '31 Dec 2025'
+    assert revenue_rows[0]['amount'] == '$100'
+    assert revenue_rows[1]['amount'] == '$200'
 
 
 def test_build_cashflow_chart_figure_includes_all_line_items() -> None:

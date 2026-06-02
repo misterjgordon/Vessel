@@ -5,26 +5,25 @@ from typing import cast
 
 from dash import Dash
 from dash import html
+from dash.exceptions import PreventUpdate
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 
 from app import component_ids as cid
+from app.callbacks._debug_log import agent_debug_log
 from app.callbacks._helpers import EMPTY_COMPARE_FIGURE
 from app.callbacks._helpers import calculation_schedules
 from app.callbacks._helpers import sensitivity_figure
 from app.callbacks._helpers import signal_css_class
 from app.views.calculation import build_cashflow_chart_figure
 from app.views.calculation import empty_cashflow_figure
-from app.views.calculation import empty_dcf_columns
-from app.views.calculation import schedule_to_dcf_table
+from app.views.calculation import schedule_to_long_table
 from app.cashflow_display import cashflow_line_item_label
 from app.views.compare import CompareVessel
 from app.views.compare import build_compare_figure
 from app.views.compare import build_compare_schedule_rows
 from app.views.compare import build_compare_summary_rows
-from app.views.compare import compare_schedule_columns
-from app.views.compare import compare_summary_columns
 from app.views.compare import parse_compare_vessel_selection
 from app.views.compare import validate_compare_metric
 from app.views.investment import format_irr
@@ -43,40 +42,48 @@ if TYPE_CHECKING:
     from sqlalchemy.orm import Session
     from sqlalchemy.orm import sessionmaker
 
-
 def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
     """Register view render callbacks."""
 
     def _empty_compare_outputs(
         message: str = '',
-    ) -> tuple[object, object, object, object, object, object]:
+    ) -> tuple[object, object, object, object]:
         return (
-            compare_summary_columns(),
             [],
             EMPTY_COMPARE_FIGURE,
-            compare_schedule_columns(),
             [],
             message,
         )
 
     @app.callback(
-        Output(cid.TABLE_COMPARE_SUMMARY, 'columns'),
         Output(cid.TABLE_COMPARE_SUMMARY, 'data'),
         Output(cid.CHART_COMPARE, 'figure'),
-        Output(cid.TABLE_COMPARE, 'columns'),
         Output(cid.TABLE_COMPARE, 'data'),
         Output(cid.COMPARE_PLACEHOLDER, 'children'),
+        Input(cid.APP_TABS, 'value'),
         Input(cid.BTN_COMPARE, 'n_clicks'),
         Input(cid.SELECT_COMPARE_METRIC, 'value'),
         State(cid.SELECT_COMPARE_VESSELS, 'value'),
         prevent_initial_call=True,
     )
     def on_compare_vessels(
+        active_tab: str | None,
         n_clicks: int | None,
         metric_field: str | None,
         vessel_ids_raw: list[int] | list[str] | int | float | str | None,
-    ) -> tuple[object, object, object, object, object, object]:
+    ) -> tuple[object, object, object, object]:
         """Summary metrics plus one schedule line item across selected saved valuations."""
+        if active_tab != cid.TAB_VALUE_COMPARE:
+            raise PreventUpdate
+        # region agent log
+        agent_debug_log(
+            location='render.py:on_compare_vessels:entry',
+            message='on_compare_vessels invoked',
+            data={'n_clicks': n_clicks, 'metric_field': metric_field},
+            hypothesis_id='H2',
+            run_id='post-fix',
+        )
+        # endregion
         if not n_clicks:
             return _empty_compare_outputs()
 
@@ -109,23 +116,12 @@ def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
                     )
                 )
 
-        vessel_columns = [
-            (entry.vessel_input_id, entry.vessel_name) for entry in entries
-        ]
-        include_delta = len(entries) == 2
         figure = build_compare_figure(entries, field, metric_label)
         summary_rows = build_compare_summary_rows(entries)
         schedule_rows = build_compare_schedule_rows(entries, field)
-        schedule_columns = compare_schedule_columns(
-            vessel_columns,
-            metric_label,
-            include_delta=include_delta,
-        )
         return (
-            compare_summary_columns(),
             summary_rows,
             figure,
-            schedule_columns,
             schedule_rows,
             '',
         )
@@ -144,6 +140,17 @@ def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
         store: dict[str, object] | None,
     ) -> tuple[object, object, object, object, object, object, object]:
         """Render View 1 outputs from the compute store."""
+        # region agent log
+        agent_debug_log(
+            location='render.py:render_investment_results:entry',
+            message='render_investment_results invoked',
+            data={
+                'has_store': store is not None,
+                'has_valuation': bool(store and 'valuation' in store),
+            },
+            hypothesis_id='H5',
+        )
+        # endregion
         empty = '—'
         empty_figure: dict[str, object] = {
             'data': [],
@@ -207,23 +214,39 @@ def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
         )
 
     @app.callback(
-        Output(cid.TABLE_CASHFLOW, 'columns'),
         Output(cid.TABLE_CASHFLOW, 'data'),
         Output(cid.CHART_CASHFLOW, 'figure'),
         Output(cid.CALCULATION_PLACEHOLDER, 'children'),
+        Input(cid.APP_TABS, 'value'),
         Input(cid.SELECT_SCENARIO, 'value'),
         Input(cid.STORE_COMPUTE, 'data'),
         Input(cid.SELECT_CALCULATION_VESSEL, 'value'),
     )
     def render_cashflow_detail(
+        active_tab: str | None,
         scenario: str | None,
         store: dict[str, object] | None,
         calculation_vessel_id: int | None,
-    ) -> tuple[list[dict[str, str]], list[dict[str, str]], dict[str, object], str]:
+    ) -> tuple[object, object, object]:
         """Render DCF pivot table and trend chart from session store or database entry."""
+        # region agent log
+        agent_debug_log(
+            location='render.py:render_cashflow_detail:entry',
+            message='render_cashflow_detail invoked',
+            data={
+                'active_tab': active_tab,
+                'scenario': scenario,
+                'has_store': store is not None,
+                'calculation_vessel_id': calculation_vessel_id,
+            },
+            hypothesis_id='H1',
+            run_id='post-fix',
+        )
+        # endregion
+        if active_tab != cid.TAB_VALUE_CALCULATION:
+            raise PreventUpdate
         if scenario is None:
             return (
-                empty_dcf_columns(),
                 [],
                 empty_cashflow_figure(),
                 'Select a scenario to view the schedule.',
@@ -235,9 +258,18 @@ def register(app: Dash, session_factory: sessionmaker[Session]) -> None:
             calculation_vessel_id,
         )
         if schedules is None:
-            return empty_dcf_columns(), [], empty_cashflow_figure(), placeholder
+            return [], empty_cashflow_figure(), placeholder
 
         schedule = schedules.get(scenario, [])
-        columns, rows = schedule_to_dcf_table(schedule)
+        rows = schedule_to_long_table(schedule)
         figure = build_cashflow_chart_figure(schedule)
-        return columns, rows, figure, placeholder
+        # region agent log
+        agent_debug_log(
+            location='render.py:render_cashflow_detail:success',
+            message='render_cashflow_detail returning table and chart',
+            data={'row_count': len(rows)},
+            hypothesis_id='H1',
+            run_id='post-fix',
+        )
+        # endregion
+        return rows, figure, placeholder

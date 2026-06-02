@@ -26,20 +26,22 @@ def app_layout() -> html.Div:
                 [
                     dcc.Tab(
                         label='Investment summary',
-                        value='investment',
+                        value=cid.TAB_VALUE_INVESTMENT,
                         children=[investment_view()],
                     ),
                     dcc.Tab(
                         label='Calculation detail',
-                        value='calculation',
+                        value=cid.TAB_VALUE_CALCULATION,
                         children=[calculation_view()],
                     ),
                     dcc.Tab(
                         label='Compare vessels',
-                        value='compare',
+                        value=cid.TAB_VALUE_COMPARE,
                         children=[compare_view()],
                     ),
                 ],
+                id=cid.APP_TABS,
+                value=cid.TAB_VALUE_INVESTMENT,
                 className='app-tabs',
             ),
         ],

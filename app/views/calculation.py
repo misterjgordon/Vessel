@@ -9,6 +9,10 @@ from dash import html
 
 from app import component_ids as cid
 from app.cashflow_display import CASHFLOW_LINE_ITEMS
+from app.table_styles import DATA_TABLE_CELL_STYLE
+from app.table_styles import DATA_TABLE_HEADER_STYLE
+from app.table_styles import DATA_TABLE_STYLE_TABLE
+from app.table_styles import data_table_left_align
 from app.cashflow_display import CASHFLOW_MONEY_FIELDS
 from app.cashflow_display import format_money
 from app.cashflow_display import format_period_header
@@ -67,12 +71,13 @@ def calculation_view() -> html.Div:
             html.Div(id=cid.CALCULATION_PLACEHOLDER, className='placeholder'),
             dash_table.DataTable(
                 id=cid.TABLE_CASHFLOW,
-                columns=empty_dcf_columns(),  # ty: ignore[invalid-argument-type]
+                columns=cashflow_table_columns(),  # ty: ignore[invalid-argument-type]
                 data=[],
                 page_size=30,
-                style_table={'overflowX': 'auto'},
-                style_cell={'textAlign': 'right', 'padding': '6px'},
-                style_header={'fontWeight': 'bold'},
+                style_table=DATA_TABLE_STYLE_TABLE,
+                style_cell=DATA_TABLE_CELL_STYLE,
+                style_cell_conditional=[data_table_left_align('line_item')],  # ty: ignore[invalid-argument-type]
+                style_header=DATA_TABLE_HEADER_STYLE,
             ),
             dcc.Graph(
                 id=cid.CHART_CASHFLOW,
@@ -83,9 +88,18 @@ def calculation_view() -> html.Div:
     )
 
 
+def cashflow_table_columns() -> list[dict[str, str]]:
+    """Fixed column definitions for the cashflow detail table (long format)."""
+    return [
+        {'name': 'Line item', 'id': 'line_item'},
+        {'name': 'Period end', 'id': 'period_end'},
+        {'name': 'Amount', 'id': 'amount'},
+    ]
+
+
 def empty_dcf_columns() -> list[dict[str, str]]:
-    """Column definitions when no schedule is loaded."""
-    return [{'name': 'Line item', 'id': 'line_item'}]
+    """Alias for layout wiring; columns are fixed in long format."""
+    return cashflow_table_columns()
 
 
 def empty_cashflow_figure() -> dict[str, object]:
@@ -93,27 +107,22 @@ def empty_cashflow_figure() -> dict[str, object]:
     return _EMPTY_CASHFLOW_FIGURE
 
 
-def schedule_to_dcf_table(
-    schedule: list[CashflowYear],
-) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
-    """Pivot schedule into DCF layout: line items as rows, period ends as columns."""
+def schedule_to_long_table(schedule: list[CashflowYear]) -> list[dict[str, str]]:
+    """One row per line item and period; avoids dynamic DataTable columns in callbacks."""
     if not schedule:
-        return empty_dcf_columns(), []
-
-    columns: list[dict[str, str]] = [{'name': 'Line item', 'id': 'line_item'}]
-    for row in schedule:
-        period_id = row.period_end.isoformat()
-        columns.append({'name': format_period_header(row.period_end), 'id': period_id})
+        return []
 
     rows: list[dict[str, str]] = []
     for field, label in CASHFLOW_LINE_ITEMS:
-        record: dict[str, str] = {'line_item': label}
         for row in schedule:
-            period_id = row.period_end.isoformat()
-            value = getattr(row, field)
-            record[period_id] = _format_cell(field, value)
-        rows.append(record)
-    return columns, rows
+            rows.append(
+                {
+                    'line_item': label,
+                    'period_end': format_period_header(row.period_end),
+                    'amount': _format_cell(field, getattr(row, field)),
+                }
+            )
+    return rows
 
 
 def build_cashflow_chart_figure(schedule: list[CashflowYear]) -> dict[str, object]:

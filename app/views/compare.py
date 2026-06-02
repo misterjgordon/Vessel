@@ -10,6 +10,10 @@ from dash import html
 
 from app import component_ids as cid
 from app.cashflow_display import CASHFLOW_LINE_ITEMS
+from app.table_styles import DATA_TABLE_CELL_STYLE
+from app.table_styles import DATA_TABLE_HEADER_STYLE
+from app.table_styles import DATA_TABLE_STYLE_TABLE
+from app.table_styles import data_table_left_align
 from app.cashflow_display import COMPARE_MAX_VESSELS
 from app.cashflow_display import COMPARE_MIN_VESSELS
 from app.cashflow_display import DEFAULT_COMPARE_METRIC
@@ -21,7 +25,6 @@ from app.views.investment import format_signal_label
 
 if TYPE_CHECKING:
     from vessel_valuation.schema import ValuationResult
-
 
 @dataclass(frozen=True)
 class CompareVessel:
@@ -80,9 +83,10 @@ def compare_view() -> html.Div:
                 columns=compare_summary_columns(),  # ty: ignore[invalid-argument-type]
                 data=[],
                 page_size=20,
-                style_table={'overflowX': 'auto'},
-                style_cell={'textAlign': 'right', 'padding': '6px'},
-                style_header={'fontWeight': 'bold'},
+                style_table=DATA_TABLE_STYLE_TABLE,
+                style_cell=DATA_TABLE_CELL_STYLE,
+                style_cell_conditional=[data_table_left_align('vessel')],  # ty: ignore[invalid-argument-type]
+                style_header=DATA_TABLE_HEADER_STYLE,
             ),
             dcc.Graph(id=cid.CHART_COMPARE),
             dash_table.DataTable(
@@ -90,9 +94,10 @@ def compare_view() -> html.Div:
                 columns=compare_schedule_columns(),  # ty: ignore[invalid-argument-type]
                 data=[],
                 page_size=30,
-                style_table={'overflowX': 'auto'},
-                style_cell={'textAlign': 'right', 'padding': '6px'},
-                style_header={'fontWeight': 'bold'},
+                style_table=DATA_TABLE_STYLE_TABLE,
+                style_cell=DATA_TABLE_CELL_STYLE,
+                style_cell_conditional=[data_table_left_align('year')],  # ty: ignore[invalid-argument-type]
+                style_header=DATA_TABLE_HEADER_STYLE,
             ),
         ],
         className='view-compare',
@@ -109,24 +114,13 @@ def compare_summary_columns() -> list[dict[str, str]]:
     ]
 
 
-def compare_schedule_columns(
-    vessels: list[tuple[int, str]] | None = None,
-    metric_label: str = 'Amount',
-    *,
-    include_delta: bool = False,
-) -> list[dict[str, str]]:
-    """Column definitions for the year-by-year comparison table."""
-    columns: list[dict[str, str]] = [{'name': 'Year', 'id': 'year'}]
-    for vessel_input_id, name in vessels or []:
-        columns.append(
-            {
-                'name': f'{name} ({metric_label})',
-                'id': _vessel_column_id(vessel_input_id),
-            }
-        )
-    if include_delta:
-        columns.append({'name': 'Delta (first − second)', 'id': 'delta'})
-    return columns
+def compare_schedule_columns() -> list[dict[str, str]]:
+    """Fixed column definitions for the year-by-year comparison table (long format)."""
+    return [
+        {'name': 'Year', 'id': 'year'},
+        {'name': 'Vessel', 'id': 'vessel'},
+        {'name': 'Amount', 'id': 'amount'},
+    ]
 
 
 def build_compare_summary_rows(vessels: list[CompareVessel]) -> list[dict[str, str]]:
@@ -149,7 +143,7 @@ def build_compare_schedule_rows(
     vessels: list[CompareVessel],
     field: str,
 ) -> list[dict[str, str | int]]:
-    """Align schedules by year; one column per vessel for the selected line item."""
+    """Align schedules by year; one row per vessel and year for the selected line item."""
     by_year: list[dict[int, float]] = []
     for entry in vessels:
         by_year.append(
@@ -158,15 +152,25 @@ def build_compare_schedule_rows(
     years = sorted({year for series in by_year for year in series})
     rows: list[dict[str, str | int]] = []
     for year in years:
-        record: dict[str, str | int] = {'year': year}
         values: list[float] = []
         for entry, series in zip(vessels, by_year, strict=True):
             value = series.get(year, 0.0)
             values.append(value)
-            record[_vessel_column_id(entry.vessel_input_id)] = format_money(value)
+            rows.append(
+                {
+                    'year': year,
+                    'vessel': entry.vessel_name,
+                    'amount': format_money(value),
+                }
+            )
         if len(values) == 2:
-            record['delta'] = format_money(values[0] - values[1])
-        rows.append(record)
+            rows.append(
+                {
+                    'year': year,
+                    'vessel': 'Delta (first − second)',
+                    'amount': format_money(values[0] - values[1]),
+                }
+            )
     return rows
 
 
@@ -249,5 +253,3 @@ def validate_compare_metric(field: str | None) -> str:
     return DEFAULT_COMPARE_METRIC
 
 
-def _vessel_column_id(vessel_input_id: int) -> str:
-    return f'vessel_{vessel_input_id}'

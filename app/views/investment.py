@@ -10,6 +10,11 @@ from dash.dash_table.Format import Scheme
 
 from app import component_ids as cid
 from app.form_defaults import FORM_DEFAULTS
+from app.table_styles import DATA_TABLE_CELL_STYLE
+from app.table_styles import DATA_TABLE_HEADER_STYLE
+from app.table_styles import DATA_TABLE_LABEL_CELL_STYLE
+from app.table_styles import DATA_TABLE_STYLE_TABLE
+from app.table_styles import data_table_left_align
 from app.form_formatting import form_field_input_type
 from app.form_formatting import format_form_field_value
 from vessel_valuation.decision_insights.scenario_analysis import DEFAULT_SCENARIO_BUNDLES
@@ -354,19 +359,10 @@ def investment_view() -> html.Div:
                 columns=scenario_table_columns(),  # ty: ignore[invalid-argument-type]
                 data=scenario_table_rows(),  # ty: ignore[invalid-argument-type]
                 editable=True,
-                style_table={'overflowX': 'auto'},
-                style_cell={
-                    'textAlign': 'right',
-                    'padding': '6px',
-                    'fontFamily': 'system-ui, sans-serif',
-                },
-                style_cell_conditional=[  # ty: ignore[invalid-argument-type]
-                    {
-                        'if': {'column_id': 'scenario'},
-                        'textAlign': 'left',  # ty: ignore[invalid-key]
-                    },
-                ],
-                style_header={'fontWeight': 'bold', 'fontFamily': 'system-ui, sans-serif'},
+                style_table=DATA_TABLE_STYLE_TABLE,
+                style_cell=DATA_TABLE_CELL_STYLE,
+                style_cell_conditional=[data_table_left_align('scenario')],  # ty: ignore[invalid-argument-type]
+                style_header=DATA_TABLE_HEADER_STYLE,
             ),
             html.Hr(),
             html.H3('Sensitivity — IRR vs revenue per day'),
@@ -434,9 +430,9 @@ def dash_table_placeholder() -> dash_table.DataTable:
         data=[],
         row_selectable='single',
         selected_rows=[],
-        style_table={'overflowX': 'auto'},
-        style_cell={'textAlign': 'left', 'padding': '6px'},
-        style_header={'fontWeight': 'bold'},
+        style_table=DATA_TABLE_STYLE_TABLE,
+        style_cell=DATA_TABLE_LABEL_CELL_STYLE,
+        style_header=DATA_TABLE_HEADER_STYLE,
         style_data_conditional=[  # ty: ignore[invalid-argument-type]
             {
                 'if': {'state': 'selected'},
